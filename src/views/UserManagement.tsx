@@ -61,7 +61,7 @@ export default function UserManagement() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      setLogs(data);
+      setLogs(data.data || []);
     } catch (err) {
       console.error(err);
     }

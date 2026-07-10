@@ -30,7 +30,7 @@ export default function AuditLogs() {
       });
       if (res.ok) {
         const data = await res.json();
-        setLogs(data);
+        setLogs(data.data || []);
       }
     } catch (err) {
       console.error(err);

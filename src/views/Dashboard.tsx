@@ -28,7 +28,7 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
-      setEvals(data);
+      setEvals(data.data || []);
     } catch (err) {
       console.error(err);
     } finally {
