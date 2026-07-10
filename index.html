@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!doctype html>
 <html lang="en">
   <head>
@@ -11,3 +12,3342 @@
   </body>
 </html>
 
+=======
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annual Performance Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@300;400;500;600;700&family=Inter:wght@200;300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.3); }
+
+body {
+  font-family: 'Noto Sans Khmer', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f0f4fa;
+  color: #0f172a;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========= STAR CANVAS ========= */
+#starCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ============= AURORA BACKGROUND ============= */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 50%, #dce1eb 100%);
+}
+.aurora-bg.light-theme {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 50%, #dce1eb 100%);
+}
+.aurora-bg.dark-theme {
+  background: linear-gradient(135deg, #0a0a1a 0%, #0f0f2a 50%, #1a0a2a 100%);
+}
+
+.aurora-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  will-change: transform;
+  pointer-events: none;
+}
+.light-theme .aurora-orb { opacity: 0.3; }
+.dark-theme .aurora-orb { opacity: 0.35; }
+
+.aurora-orb:nth-child(1) {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, #6366f1 0%, #8b5cf6 40%, transparent 70%);
+  top: -15%; left: -10%;
+  animation: auroraDrift1 20s ease-in-out infinite;
+}
+.aurora-orb:nth-child(2) {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, #06b6d4 0%, #3b82f6 40%, transparent 70%);
+  bottom: -20%; right: -10%;
+  animation: auroraDrift2 25s ease-in-out infinite;
+}
+.aurora-orb:nth-child(3) {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, #a855f7 0%, #ec4899 40%, transparent 70%);
+  top: 40%; left: 50%;
+  transform: translate(-50%, -50%);
+  animation: auroraDrift3 18s ease-in-out infinite;
+}
+.aurora-orb:nth-child(4) {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, #f59e0b 0%, #ef4444 40%, transparent 70%);
+  bottom: 10%; left: 10%;
+  animation: auroraDrift4 22s ease-in-out infinite;
+}
+
+@keyframes auroraDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, 40px) scale(1.1); }
+  66% { transform: translate(-30px, -20px) scale(0.95); }
+}
+@keyframes auroraDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, -30px) scale(1.15); }
+  66% { transform: translate(40px, 20px) scale(0.9); }
+}
+@keyframes auroraDrift3 {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-45%, -55%) scale(1.2); }
+}
+@keyframes auroraDrift4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -40px) scale(1.1); }
+}
+
+/* ============= LOGIN ============= */
+.login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.login-overlay.hidden {
+  opacity: 0;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+
+/* Glass Card */
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: 48px 40px 40px;
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 28px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.3),
+    0 8px 32px rgba(0,0,0,0.06),
+    0 24px 60px rgba(0,0,0,0.04);
+  animation: cardEnter 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+}
+.login-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+  pointer-events: none;
+}
+
+.login-dark .login-card {
+  background: rgba(18,18,40,0.75);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border-color: rgba(255,255,255,0.08);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04),
+    0 8px 32px rgba(0,0,0,0.3),
+    0 24px 60px rgba(0,0,0,0.2);
+}
+
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(30px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-header .logo-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 16px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+  animation: logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+  50% { box-shadow: 0 4px 24px rgba(99,102,241,0.5); }
+}
+
+.login-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.6px;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  line-height: 1.2;
+}
+.login-dark .login-header h1 { color: #f1f5f9; }
+
+.login-header p {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  margin-top: 6px;
+}
+.login-dark .login-header p { color: #94a3b8; }
+
+/* Input Groups */
+.input-group {
+  margin-bottom: 28px;
+  position: relative;
+  z-index: 1;
+}
+
+.input-group .input-label {
+  display: block;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+  letter-spacing: 0.2px;
+}
+.login-dark .input-group .input-label { color: #cbd5e1; }
+
+.input-group .input-wrap {
+  position: relative;
+}
+
+.input-group .input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+}
+.login-dark .input-group .input-icon { color: #64748b; }
+
+.input-group input {
+  width: 100%;
+  height: 56px;
+  padding: 0 48px 0 48px;
+  background: rgba(255,255,255,0.6);
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Noto Sans Khmer', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: #0f172a;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  outline: none;
+  position: relative;
+}
+.login-dark .input-group input {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+  color: #f1f5f9;
+}
+
+.input-group input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+.login-dark .input-group input::placeholder { color: #64748b; }
+
+.input-group input:focus {
+  border-color: #6366f1;
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.1), 0 2px 8px rgba(99,102,241,0.06);
+}
+.login-dark .input-group input:focus {
+  border-color: #818cf8;
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 0 4px rgba(129,140,248,0.12), 0 2px 8px rgba(129,140,248,0.06);
+}
+
+.input-group input:focus ~ .input-icon {
+  color: #6366f1;
+}
+.login-dark .input-group input:focus ~ .input-icon { color: #818cf8; }
+
+.input-group input.has-error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239,68,68,0.1);
+}
+.input-group input.has-error:focus {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 4px rgba(239,68,68,0.1);
+}
+
+.input-group .error-message {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ef4444;
+  margin-top: 6px;
+  padding-left: 4px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.25s ease;
+  min-height: 18px;
+}
+.input-group .error-message.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Password Toggle */
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 8px;
+  color: #94a3b8;
+  transition: all 0.3s ease;
+}
+.login-dark .password-toggle { color: #64748b; }
+.password-toggle:hover {
+  color: #6366f1;
+  background: rgba(99,102,241,0.08);
+}
+.password-toggle.visible { color: #6366f1; }
+.login-dark .password-toggle.visible { color: #818cf8; }
+
+.password-toggle .eye-icon {
+  width: 20px;
+  height: 20px;
+  transition: all 0.3s ease;
+}
+.password-toggle .eye-off { display: none; }
+.password-toggle.visible .eye-on { display: none; }
+.password-toggle.visible .eye-off { display: block; }
+
+/* Forgot Password */
+.forgot-password {
+  text-align: right;
+  margin-top: -8px;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+.forgot-password a {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  letter-spacing: 0.1px;
+}
+.login-dark .forgot-password a { color: #64748b; }
+.forgot-password a:hover { color: #6366f1; }
+
+/* Login Button */
+.login-btn {
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  letter-spacing: 0.2px;
+  margin-top: 8px;
+  z-index: 1;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.3);
+}
+.login-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.login-btn:hover::before { opacity: 1; }
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+  background-position: 100% 50%;
+}
+.login-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+.login-btn.loading {
+  pointer-events: none;
+}
+.login-btn .btn-text {
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.login-btn:hover .btn-text { letter-spacing: 0.5px; }
+.login-btn.loading .btn-text { opacity: 0; transform: scale(0.85); }
+.login-btn .spinner {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px; height: 22px;
+  border: 2.5px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-right-color: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  animation: spin 0.7s cubic-bezier(0.34,1.56,0.64,1) infinite;
+  opacity: 0; transition: all 0.3s ease;
+  z-index: 2;
+}
+.login-btn.loading .spinner { opacity: 1; }
+@keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+/* Ripple effect */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  transform: scale(0);
+  animation: rippleAnim 0.6s ease-out;
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes rippleAnim {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* Error */
+.login-error {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ef4444;
+  margin-top: 14px;
+  min-height: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+.login-error.show { opacity: 1; }
+
+/* Server Config */
+.server-config {
+  text-align: right;
+  margin-top: -6px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 1;
+}
+.server-config > a {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.login-dark .server-config > a { color: #64748b; }
+.server-config > a:hover { color: #6366f1; }
+.server-config-input {
+  display: none;
+  margin-top: 8px;
+  text-align: left;
+}
+.server-config-input.show { display: block; }
+.server-config-input label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+.login-dark .server-config-input label { color: #64748b; }
+.server-config-input input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.6);
+  color: #0f172a;
+  font-size: 12px;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  outline: none;
+  transition: all 0.3s ease;
+}
+.login-dark .server-config-input input {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.1);
+  color: #f1f5f9;
+}
+.server-config-input input:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+/* Footer */
+.login-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0.3px;
+  position: relative;
+  z-index: 1;
+}
+.login-dark .login-footer { color: #64748b; }
+
+/* Theme Toggle */
+.login-theme-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(226,232,240,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  color: #64748b;
+  z-index: 5;
+  backdrop-filter: blur(8px);
+}
+.login-dark .login-theme-toggle {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.08);
+  color: #94a3b8;
+}
+.login-theme-toggle:hover {
+  background: rgba(255,255,255,0.85);
+  color: #6366f1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.15);
+}
+.login-dark .login-theme-toggle:hover {
+  background: rgba(255,255,255,0.1);
+  color: #818cf8;
+}
+.login-theme-toggle .sun-icon { display: block; }
+.login-theme-toggle .moon-icon { display: none; }
+.login-theme-toggle.dark .sun-icon { display: none; }
+.login-theme-toggle.dark .moon-icon { display: block; }
+
+.login-dark .login-overlay { background: transparent; }
+
+/* ============= MAIN APP WRAPPER ============= */
+.app-wrapper {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.app-wrapper.show {
+  display: block;
+  opacity: 1;
+}
+
+/* ========= GLOW BG ========= */
+.bg-glow {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+.bg-glow-1 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(56,189,248,0.2), rgba(56,189,248,0.05), transparent 70%);
+  top: -250px; right: -200px;
+  animation: floatGlow 14s ease-in-out infinite;
+}
+.bg-glow-2 {
+  width: 550px; height: 550px;
+  background: radial-gradient(circle, rgba(99,102,241,0.18), rgba(99,102,241,0.04), transparent 70%);
+  bottom: -180px; left: -150px;
+  animation: floatGlow 16s ease-in-out infinite reverse;
+}
+.bg-glow-3 {
+  width: 450px; height: 450px;
+  background: radial-gradient(circle, rgba(14,165,233,0.15), transparent 65%);
+  top: 35%; left: 55%;
+  animation: floatGlow 12s ease-in-out infinite 3s;
+}
+.bg-glow-4 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(99,102,241,0.12), transparent 60%);
+  top: 60%; left: 10%;
+  animation: floatGlow 18s ease-in-out infinite 6s;
+}
+.bg-glow-5 {
+  width: 250px; height: 250px;
+  background: radial-gradient(circle, rgba(56,189,248,0.12), transparent 60%);
+  top: 15%; left: 40%;
+  animation: floatGlow 15s ease-in-out infinite 8s;
+}
+@keyframes floatGlow {
+  0%, 100% { transform: translate(0,0) scale(1); }
+  25% { transform: translate(50px,-40px) scale(1.08); }
+  50% { transform: translate(-20px,30px) scale(0.95); }
+  75% { transform: translate(30px,20px) scale(1.03); }
+}
+
+/* ========= NEON LINES ========= */
+.neon-line {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.5;
+}
+.neon-line-1 {
+  width: 1px; height: 350px;
+  background: linear-gradient(180deg, transparent, rgba(56,189,248,0.6), transparent);
+  top: 8%; left: 20%;
+  animation: neonPulse 4s ease-in-out infinite;
+}
+.neon-line-2 {
+  width: 300px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99,102,241,0.6), transparent);
+  bottom: 25%; right: 8%;
+  animation: neonPulse 5s ease-in-out infinite 1s;
+}
+.neon-line-3 {
+  width: 1px; height: 250px;
+  background: linear-gradient(180deg, transparent, rgba(14,165,233,0.5), transparent);
+  bottom: 15%; right: 30%;
+  animation: neonPulse 6s ease-in-out infinite 2s;
+}
+.neon-line-4 {
+  width: 200px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent);
+  top: 40%; left: 5%;
+  animation: neonPulse 4.5s ease-in-out infinite 3s;
+}
+@keyframes neonPulse {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.2; }
+}
+
+.container { max-width: 1280px; margin: 0 auto; padding: 28px 32px; position: relative; z-index: 1; color: #0f172a; }
+
+/* ========= HEADER ========= */
+.header {
+  padding: 22px 32px; margin-bottom: 28px;
+  background: #0A0B31;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(10,11,49,0.3);
+  animation: fadeDown 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.header-inner {
+  display: flex; align-items: center; gap: 16px;
+}
+.header-icon {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, #0ea5e9, #6366f1);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(14,165,233,0.2);
+}
+.header h1 {
+  font-size: 20px; font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.header h1 span {
+  display: block; font-size: 11px; font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  margin-top: 1px; letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+/* ========= LAYOUT ========= */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ========= SIDEBAR ========= */
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #0A0B31;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  animation: slideLeft 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 10;
+}
+@keyframes slideLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.sidebar-logo {
+  display: flex; align-items: center; gap: 12px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 20px;
+}
+.sidebar-logo .logo-icon {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, #0ea5e9, #60a5fa);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #fff;
+  flex-shrink: 0;
+}
+.sidebar-logo div {
+  font-size: 15px; font-weight: 700; color: #fff; line-height: 1.3;
+}
+.sidebar-logo div span {
+  font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.45); display: block;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  font-size: 14px; font-weight: 700;
+  color: rgba(255,255,255,0.45);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  border: none; background: none;
+  font-family: 'Noto Sans Khmer', 'Inter', sans-serif;
+  text-align: left; width: 100%;
+  position: relative;
+}
+.sidebar-item:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  transform: translateX(4px);
+}
+.sidebar-item.active {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  transform: translateX(0);
+}
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 20px;
+  background: linear-gradient(180deg, #0ea5e9, #60a5fa);
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 12px rgba(14,165,233,0.4);
+}
+.sidebar-item .nav-icon {
+  font-size: 18px; width: 24px; text-align: center; flex-shrink: 0;
+}
+.sidebar-item .nav-badge {
+  margin-left: auto;
+  font-size: 10px; font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(14,165,233,0.2);
+  color: #93c5fd;
+}
+
+.sidebar-footer {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin-top: 8px;
+}
+.sidebar-user {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  margin-bottom: 8px;
+}
+.sidebar-user .avatar {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, #0ea5e9, #60a5fa);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  flex-shrink: 0;
+}
+.sidebar-user .user-info { flex: 1; min-width: 0; }
+.sidebar-user .user-info .name {
+  font-size: 12px; font-weight: 700; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-user .user-info .role {
+  font-size: 10px; color: rgba(255,255,255,0.35); font-weight: 500;
+}
+.sidebar-logout {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; width: 100%;
+  border-radius: 12px; border: none; background: none;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  color: rgba(255,255,255,0.35);
+  cursor: pointer; transition: all 0.25s ease;
+}
+.sidebar-logout:hover {
+  background: rgba(239,68,68,0.12);
+  color: #fca5a5;
+}
+
+.sidebar-toggle {
+  display: none;
+  position: fixed; top: 16px; left: 16px; z-index: 100;
+  width: 40px; height: 40px;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(148,163,184,0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  align-items: center; justify-content: center;
+  cursor: pointer; font-size: 18px; color: rgba(15,23,42,0.4);
+}
+
+/* ========= MAIN CONTENT ========= */
+.main-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content { display: none; animation: fadeUp 0.5s ease; }
+.tab-content.active { display: block; }
+
+/* ========= CARDS ========= */
+.glass-card {
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.75);
+  border-radius: 22px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 4px 24px rgba(148,163,184,0.04);
+  padding: 32px; margin-bottom: 24px;
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.glass-card:hover {
+  border-color: rgba(255,255,255,0.9);
+  box-shadow: 0 8px 40px rgba(148,163,184,0.08);
+}
+
+.card-title {
+  font-size: 20px; font-weight: 800; color: #0f172a;
+  margin-bottom: 28px; display: flex; align-items: center; gap: 12px;
+  letter-spacing: -0.3px;
+}
+.card-title .icon { font-size: 22px; opacity: 0.5; }
+.card-title .accent { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(14,165,233,0.12), transparent); margin-left: 4px; }
+
+/* ========= STATS ========= */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 18px;
+  margin-bottom: 28px; animation: fadeDown 0.8s cubic-bezier(0.34,1.56,0.64,1) 0.2s both;
+}
+.stat-card {
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.75);
+  border-radius: 18px; padding: 28px 30px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(148,163,184,0.04);
+  transition: all 0.4s ease; position: relative; overflow: hidden; cursor: default;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: 18px 18px 0 0; opacity: 0.5; transition: opacity 0.4s ease;
+}
+.stat-card:hover::before { opacity: 1; }
+.stat-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,255,255,0.9);
+  box-shadow: 0 12px 40px rgba(148,163,184,0.1);
+}
+.stat-card:nth-child(1)::before { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.stat-card:nth-child(2)::before { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+.stat-card:nth-child(3)::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+.stat-card:nth-child(4)::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.stat-card .stat-icon { font-size: 24px; margin-bottom: 12px; opacity: 0.5; }
+.stat-card .stat-label {
+  font-size: 12px; color: rgba(15,23,42,0.3); font-weight: 600;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.stat-card .stat-value {
+  font-size: 36px; font-weight: 800; letter-spacing: -1.5px; margin-top: 6px;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #0f172a, #0ea5e9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-card .stat-sub { font-size: 12px; color: rgba(15,23,42,0.15); margin-top: 4px; font-weight: 500; }
+
+/* ========= FORM ========= */
+.form-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 22px;
+}
+.form-group { display: flex; flex-direction: column; position: relative; }
+.form-group label {
+  font-size: 18px; font-weight: 900; color: #0f172a;
+  margin-bottom: 10px; letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.form-group label span { font-weight: 700; color: rgba(15,23,42,0.35); font-size: 14px; text-transform: none; letter-spacing: 0.2px; }
+.form-group input, .form-group select {
+  padding: 16px 20px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(148,163,184,0.12);
+  border-radius: 14px;
+  font-family: inherit; font-size: 17px; font-weight: 600; color: #0f172a;
+  transition: all 0.3s ease;
+}
+.form-group input:focus, .form-group select:focus {
+  outline: none; border-color: #0ea5e9;
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.08);
+}
+.form-group input::placeholder { color: rgba(15,23,42,0.15); font-weight: 500; }
+.form-group select option { background: #fff; color: #0f172a; }
+.form-group .auto-field { background: rgba(14,165,233,0.03); color: #0f172a; font-weight: 700; letter-spacing: 0.2px; font-size: 17px; }
+
+.autocomplete-wrap { position: relative; }
+.autocomplete-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+  background: #fff; border: 1px solid rgba(148,163,184,0.15);
+  border-radius: 14px; margin-top: 6px;
+  max-height: 260px; overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(148,163,184,0.12);
+  display: none;
+}
+.autocomplete-dropdown.show { display: block; }
+.autocomplete-item {
+  padding: 14px 18px; cursor: pointer; transition: all 0.15s ease;
+  border-bottom: 1px solid rgba(148,163,184,0.04);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: rgba(14,165,233,0.04); }
+.autocomplete-item .id { font-weight: 700; font-family: 'Inter', sans-serif; color: #0ea5e9; font-size: 16px; }
+.autocomplete-item .name { color: #0f172a; font-size: 16px; font-weight: 600; }
+.autocomplete-item .meta { font-size: 13px; color: rgba(15,23,42,0.2); }
+
+/* ========= RATING ========= */
+.rating-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.rating-pill {
+  display: flex; gap: 12px; align-items: center;
+  padding: 16px 20px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px; font-size: 15px;
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1); color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  cursor: default;
+}
+.rating-pill:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
+.rating-pill .range { font-weight: 800; font-size: 17px; font-family: 'Inter', sans-serif; white-space: nowrap; letter-spacing: -0.3px; }
+.rating-pill .desc { font-weight: 600; font-size: 15px; line-height: 1.4; }
+.rating-pill .desc .en { font-weight: 500; font-size: 13px; display: block; opacity: 0.5; }
+
+/* ========= SCORES ========= */
+.score-grid { margin-top: 6px; }
+.score-header {
+  display: grid; grid-template-columns: 44px 1fr 70px 140px 140px; gap: 10px;
+  padding: 16px 22px; background: rgba(14,165,233,0.03); border-radius: 14px;
+  font-size: 16px; font-weight: 800; color: #0ea5e9;
+  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px;
+}
+.score-row {
+  display: grid; grid-template-columns: 44px 1fr 70px 140px 140px; gap: 10px;
+  padding: 16px 22px; border-bottom: 1px solid rgba(148,163,184,0.06);
+  align-items: center; transition: all 0.2s ease; border-radius: 10px;
+}
+.score-row:hover { background: rgba(14,165,233,0.02); }
+.score-row .num { font-weight: 900; color: rgba(15,23,42,0.25); text-align: center; font-family: 'Inter', sans-serif; font-size: 20px; }
+.score-row .criteria-name { font-size: 20px; font-weight: 800; color: #0f172a; }
+.score-row .criteria-name .kh-desc { font-size: 14px; font-weight: 700; color: rgba(15,23,42,0.3); display: block; padding-left: 20px; margin-top: 2px; }
+.score-row .criteria-name .en { font-size: 16px; font-weight: 700; color: rgba(15,23,42,0.35); display: block; margin-top: 2px; }
+.score-row .max-score { text-align: center; font-weight: 900; color: rgba(15,23,42,0.25); font-family: 'Inter', sans-serif; font-size: 20px; }
+.score-row input[type="number"] {
+  width: 100%; padding: 14px 8px; border: 1px solid rgba(148,163,184,0.12);
+  border-radius: 12px; text-align: center;
+  font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 800;
+  color: #0f172a; background: rgba(255,255,255,0.4);
+  transition: all 0.25s ease; outline: none; -moz-appearance: textfield;
+}
+.score-row input[type="number"]:focus {
+  border-color: rgba(14,165,233,0.3); background: rgba(255,255,255,0.8);
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.06);
+}
+.score-row input[type="number"]:focus {
+  outline: none; border-color: #0ea5e9;
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.08);
+}
+.total-row {
+  display: grid; grid-template-columns: 1fr 70px 140px 140px; gap: 10px;
+  padding: 22px;
+  background: linear-gradient(135deg, rgba(14,165,233,0.06), rgba(99,102,241,0.03));
+  border: 1px solid rgba(14,165,233,0.1); border-radius: 14px;
+  font-weight: 800; margin-top: 12px; text-align: center; color: #0f172a;
+}
+.total-row .label { text-align: left; color: rgba(15,23,42,0.35); font-size: 18px; }
+.total-row .val { color: #0f172a; font-family: 'Inter', sans-serif; font-size: 24px; }
+
+/* ========= BUTTONS ========= */
+.btn { padding: 14px 32px; border: none; border-radius: 14px; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; }
+.btn-primary { background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; box-shadow: 0 4px 16px rgba(14,165,233,0.2); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(14,165,233,0.3); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-secondary { background: rgba(255,255,255,0.55); border: 1px solid rgba(148,163,184,0.1); color: rgba(15,23,42,0.4); }
+.btn-secondary:hover { background: rgba(255,255,255,0.75); color: #0f172a; }
+.btn-ghost { background: rgba(255,255,255,0.35); border: 1px solid rgba(148,163,184,0.08); color: rgba(15,23,42,0.3); padding: 10px 18px; font-size: 13px; border-radius: 10px; }
+.btn-ghost:hover { background: rgba(255,255,255,0.6); color: #0f172a; }
+.btn-export { background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; box-shadow: 0 4px 16px rgba(14,165,233,0.15); }
+.btn-export:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(14,165,233,0.25); }
+.btn-import { background: linear-gradient(135deg, #6366f1, #818cf8); color: #fff; box-shadow: 0 4px 16px rgba(99,102,241,0.15); }
+.btn-import:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.25); }
+.btn-danger { background: rgba(220,38,38,0.06); border: 1px solid rgba(220,38,38,0.12); color: #dc2626; }
+.btn-danger:hover { background: rgba(220,38,38,0.1); }
+.btn-icon { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.45); border: 1px solid rgba(148,163,184,0.08); border-radius: 12px; cursor: pointer; transition: all 0.3s ease; font-size: 16px; color: rgba(15,23,42,0.25); }
+.btn-icon:hover { background: rgba(255,255,255,0.7); color: #0f172a; }
+.btn-sm { padding: 8px 18px; font-size: 13px; border-radius: 10px; }
+.btn-action { padding: 6px 14px; font-size: 12px; font-weight: 700; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
+.btn-view { background: rgba(14,165,233,0.08); color: #0ea5e9; }
+.btn-view:hover { background: rgba(14,165,233,0.15); transform: translateY(-1px); }
+.btn-delete-sm { background: rgba(220,38,38,0.08); color: #dc2626; }
+.btn-delete-sm:hover { background: rgba(220,38,38,0.14); transform: translateY(-1px); }
+
+.actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; flex-wrap: wrap; }
+
+/* ========= DASHBOARD ========= */
+.dashboard-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px; animation: fadeDown 0.8s ease 0.3s both;
+  flex-wrap: wrap; gap: 16px;
+}
+.dashboard-header h2 { font-size: 20px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 10px; }
+.search-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search-bar input {
+  padding: 12px 18px; background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(148,163,184,0.1); border-radius: 12px;
+  font-family: inherit; font-size: 14px; font-weight: 500; color: #0f172a; width: 260px;
+  transition: all 0.3s ease;
+}
+.search-bar input:focus { outline: none; border-color: #0ea5e9; background: rgba(255,255,255,0.85); }
+.search-bar input::placeholder { color: rgba(15,23,42,0.15); }
+
+.results-table-wrap { overflow-x: auto; border-radius: 14px; }
+.results-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+.results-table thead th {
+  padding: 14px 12px; text-align: left; font-weight: 800;
+  font-size: 13px; text-transform: uppercase; letter-spacing: 0.4px;
+  color: #0ea5e9;
+  border-bottom: 1px solid rgba(14,165,233,0.12); white-space: nowrap;
+}
+.results-table tbody tr { transition: all 0.3s ease; cursor: pointer; }
+.results-table tbody tr:hover { background: rgba(14,165,233,0.03); }
+.results-table tbody td {
+  padding: 12px 12px; border-bottom: 1px solid rgba(148,163,184,0.04);
+  color: rgba(15,23,42,0.45);
+}
+.results-table tbody tr td:first-child { font-weight: 600; color: #0f172a; }
+
+/* ========= BADGES ========= */
+.badge { display: inline-block; padding: 5px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; border: 1px solid transparent; text-transform: uppercase; }
+.badge-outstanding { background: rgba(16,185,129,0.06); color: #059669; border-color: rgba(16,185,129,0.12); }
+.badge-good { background: rgba(14,165,233,0.06); color: #0284c7; border-color: rgba(14,165,233,0.12); }
+.badge-meets { background: rgba(245,158,11,0.06); color: #b45309; border-color: rgba(245,158,11,0.12); }
+.badge-below { background: rgba(239,68,68,0.06); color: #dc2626; border-color: rgba(239,68,68,0.12); }
+.badge-fail { background: rgba(239,68,68,0.04); color: #b91c1c; border-color: rgba(239,68,68,0.08); }
+
+/* ========= MODAL ========= */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(148,163,184,0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 999; justify-content: center; align-items: center;
+  padding: 20px; animation: fadeIn 0.3s ease;
+}
+.modal-overlay.show { display: flex; }
+.modal-glass {
+  background: rgba(255,255,255,0.95);
+  border: 1px solid rgba(255,255,255,0.95);
+  border-radius: 24px; max-width: 800px; width: 100%;
+  max-height: 90vh; overflow-y: auto; padding: 36px;
+  position: relative;
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  box-shadow: 0 24px 80px rgba(148,163,184,0.15);
+  animation: scaleIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+.modal-glass h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 20px; padding-right: 80px; }
+.modal-glass .modal-actions { position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; }
+.modal-close-btn { background: rgba(148,163,184,0.06); border: 1px solid rgba(148,163,184,0.08); border-radius: 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(15,23,42,0.25); font-size: 18px; transition: all 0.3s ease; }
+.modal-close-btn:hover { background: rgba(148,163,184,0.1); color: #0f172a; }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 28px; padding: 24px; background: rgba(14,165,233,0.02); border: 1px solid rgba(14,165,233,0.06); border-radius: 16px; }
+.detail-item .label { font-size: 11px; color: rgba(15,23,42,0.3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-item .value { font-size: 15px; font-weight: 600; color: #0f172a; margin-top: 3px; }
+
+/* ========= TOAST ========= */
+.toast { position: fixed; bottom: 28px; right: 28px; padding: 14px 24px; border-radius: 12px; color: #fff; font-weight: 600; font-size: 13px; z-index: 2000; transform: translateY(120%) scale(0.9); opacity: 0; transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 8px 32px rgba(0,0,0,0.06); }
+.toast.show { transform: translateY(0) scale(1); opacity: 1; }
+.toast-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.2); color: #065f46; }
+.toast-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.2); color: #991b1b; }
+
+/* ========= SCORE BAR ========= */
+.score-bar-wrap { display: flex; align-items: center; gap: 10px; }
+.score-bar-track { flex: 1; height: 8px; background: rgba(148,163,184,0.06); border-radius: 4px; overflow: hidden; }
+.score-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* ========= NO DATA ========= */
+.no-data { text-align: center; padding: 80px 20px; }
+.no-data-icon { font-size: 56px; margin-bottom: 18px; opacity: 0.2; }
+.no-data p { color: rgba(15,23,42,0.2); font-size: 15px; }
+.no-data p:last-child { color: rgba(15,23,42,0.1); font-size: 13px; }
+
+/* ========= MANAGE USERS ========= */
+.manage-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px; flex-wrap: wrap; gap: 16px;
+}
+.manage-header h3 {
+  font-size: 18px; font-weight: 700; color: #0f172a;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.role-badge {
+  display: inline-block; padding: 3px 12px;
+  border-radius: 20px; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.3px; text-transform: uppercase;
+}
+.role-badge.admin { background: rgba(14,165,233,0.06); color: #0284c7; border: 1px solid rgba(14,165,233,0.1); }
+.role-badge.superadmin { background: rgba(251,191,36,0.06); color: #b45309; border: 1px solid rgba(251,191,36,0.1); }
+
+.btn-icon-sm {
+  width: 36px; height: 36px; border: none;
+  background: rgba(148,163,184,0.06);
+  border-radius: 10px; color: rgba(15,23,42,0.25);
+  cursor: pointer; font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease;
+}
+.btn-icon-sm:hover { background: rgba(148,163,184,0.1); color: #0f172a; }
+
+/* ========= ANIMATIONS ========= */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ========= RESPONSIVE ========= */
+@media (max-width: 1100px) {
+  .stats-row { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 900px) {
+  .sidebar { width: 200px; padding: 20px 12px; }
+  .sidebar-logo div { font-size: 13px; }
+  .sidebar-item { padding: 11px 14px; font-size: 13px; }
+  .rating-grid { grid-template-columns: repeat(2,1fr); }
+  .dashboard-header { flex-direction: column; align-items: stretch; }
+  .search-bar { flex-direction: column; }
+  .search-bar input { width: 100%; }
+  .detail-grid { grid-template-columns: 1fr 1fr; }
+  .score-header, .score-row { grid-template-columns: 36px 1fr 60px 120px 120px; font-size: 12px; }
+  .total-row { grid-template-columns: 1fr 60px 120px 120px; }
+  .results-table thead th { padding: 10px 8px; font-size: 11px; }
+  .results-table tbody td { padding: 10px 8px; font-size: 12px; }
+}
+@media (max-width: 768px) {
+  .sidebar-toggle { display: flex; }
+  .sidebar {
+    position: fixed; left: 0; top: 0; z-index: 99;
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    height: 100vh;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 98;
+    background: rgba(148,163,184,0.2);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .sidebar-overlay.show { display: block; }
+}
+@media (max-width: 900px) {
+  .login-overlay { padding: 32px 20px; }
+  .login-card { padding: 40px 32px 36px; }
+}
+@media (max-width: 600px) {
+  .stats-row { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .score-header, .score-row { grid-template-columns: 32px 1fr 50px 100px 100px; font-size: 12px; }
+  .total-row { grid-template-columns: 1fr 50px 100px 100px; }
+  .rating-grid { grid-template-columns: 1fr; }
+  .header { padding: 16px 18px; }
+  .header h1 { font-size: 16px; }
+  .header h1 span { font-size: 10px; }
+  .container { padding: 16px; }
+  .glass-card { padding: 20px; }
+  .sidebar { width: 100%; max-width: 280px; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .login-card { padding: 32px 24px 28px; }
+  .login-header h1 { font-size: 20px; }
+  .login-header .logo-icon { width: 44px; height: 44px; }
+  .login-header .logo-icon svg { width: 22px; height: 22px; }
+  .results-table thead th { padding: 8px 6px; font-size: 10px; letter-spacing: 0.2px; }
+  .results-table tbody td { padding: 8px 6px; font-size: 11px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="starCanvas"></canvas>
+
+<div class="neon-line neon-line-1"></div>
+<div class="neon-line neon-line-2"></div>
+<div class="neon-line neon-line-3"></div>
+<div class="neon-line neon-line-4"></div>
+
+<!-- ========= AURORA BACKGROUND ========= -->
+<div class="aurora-bg" id="auroraBg">
+  <div class="aurora-orb"></div>
+  <div class="aurora-orb"></div>
+  <div class="aurora-orb"></div>
+  <div class="aurora-orb"></div>
+</div>
+
+<!-- ========= LOGIN OVERLAY ========= -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+    <div class="login-theme-toggle" id="loginThemeToggle" onclick="toggleLoginTheme()" aria-label="Toggle theme">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sun-icon">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="moon-icon">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </div>
+
+    <div class="login-header">
+      <div class="logo-icon" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="white"/>
+        </svg>
+      </div>
+      <h1>Annual Performance</h1>
+      <p>Sign in to access the evaluation system</p>
+    </div>
+
+    <div class="input-group">
+      <label class="input-label" for="userId">User ID</label>
+      <div class="input-wrap">
+        <input type="text" id="userId" placeholder="Enter your User ID" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()" oninput="clearInputError(this)">
+        <span class="input-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+      </div>
+      <div class="error-message" id="userIdError"></div>
+    </div>
+
+    <div class="input-group">
+      <label class="input-label" for="password">Password</label>
+      <div class="input-wrap">
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()" oninput="clearInputError(this)">
+        <span class="input-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+        </span>
+        <span class="password-toggle" id="passwordToggle" onclick="togglePassword()" role="button" tabindex="0" aria-label="Toggle password visibility">
+          <svg class="eye-icon eye-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <svg class="eye-icon eye-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </span>
+      </div>
+      <div class="error-message" id="passwordError"></div>
+    </div>
+
+    <div class="forgot-password">
+      <a href="#" onclick="alert('Contact administrator to reset your password.'); return false;">Forgot password?</a>
+    </div>
+
+    <div class="server-config">
+      <a href="#" onclick="toggleServerConfig(); return false;">&#9881; Server</a>
+      <div class="server-config-input" id="serverConfigInput">
+        <label>Backend API URL</label>
+        <input type="url" id="apiBaseUrlInput" placeholder="https://your-server.onrender.com" onchange="saveApiBaseUrl()">
+      </div>
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">
+      <span class="btn-text">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+          <polyline points="10 17 15 12 10 7"/>
+          <line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        Sign In
+      </span>
+      <div class="spinner"></div>
+    </button>
+
+    <div class="login-error" id="loginError"></div>
+    <div class="login-footer">&copy; 2026 Annual Performance Dashboard &mdash; Secure Access</div>
+  </div>
+</div>
+
+<!-- ========= MAIN APP ========= -->
+<div class="app-wrapper" id="appWrapper">
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+<div class="bg-glow bg-glow-3"></div>
+<div class="bg-glow bg-glow-4"></div>
+<div class="bg-glow bg-glow-5"></div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">&#9776;</button>
+
+<div class="app-layout">
+  <!-- ========= SIDEBAR ========= -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="white"/>
+        </svg>
+      </div>
+      <div>
+        Performance
+        <span>Management System</span>
+      </div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="sidebar-item active" onclick="switchTab('form', this);closeSidebar()">
+        <span class="nav-icon">&#128221;</span>
+        New Evaluation
+      </button>
+      <button class="sidebar-item" onclick="switchTab('dashboard', this);closeSidebar()">
+        <span class="nav-icon">&#128202;</span>
+        Dashboard Reports
+      </button>
+      <button class="sidebar-item" id="manageUsersSidebarBtn" onclick="switchTab('manageusers', this);closeSidebar()" style="display:none">
+        <span class="nav-icon">&#128295;</span>
+        Manage Users
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="avatar" id="sidebarAvatar">SA</div>
+        <div class="user-info">
+          <div class="name" id="sidebarName">Admin</div>
+          <div class="role" id="sidebarRole">Administrator</div>
+        </div>
+      </div>
+      <button class="sidebar-logout" onclick="doLogout()">
+        &#10140; LOG OUT
+      </button>
+    </div>
+  </div>
+
+  <!-- ========= MAIN CONTENT ========= -->
+  <div class="main-content">
+    <div class="container">
+
+
+      <div class="header">
+        <div class="header-inner">
+          <div class="header-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="white"/>
+            </svg>
+          </div>
+          <div>
+            <h1>Annual Performance Dashboard
+              <span>Staff Evaluation Form (Management)</span>
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-form" class="tab-content active">
+        <div class="glass-card" style="animation:fadeUp 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.1s both">
+      <div class="card-title"><span class="icon">&#128100;</span> ព័ត៌មានបុគ្គលិក / Employee Information</div>
+      <div class="form-grid">
+        <div class="form-group autocomplete-wrap">
+          <label>លេខសម្គាល់បុគ្គលិក <span>Employee ID</span></label>
+          <input type="text" id="empId" placeholder="Type ID to search..." oninput="filterEmployees(this.value)" onblur="hideAutocomplete()" onfocus="filterEmployees(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();autoSelectEmployee(this.value)}">
+          <div class="autocomplete-dropdown" id="autoDropdown"></div>
+        </div>
+        <div class="form-group">
+          <label>ឈ្មោះបុគ្គលិក <span>Employee Name</span></label>
+          <input type="text" id="empName" class="auto-field" readonly placeholder="Auto-filled from ID">
+        </div>
+        <div class="form-group">
+          <label>តួនាទី <span>Position Held</span></label>
+          <input type="text" id="position" class="auto-field" readonly>
+        </div>
+        <div class="form-group">
+          <label>សាខា <span>Campus</span></label>
+          <input type="text" id="campus" class="auto-field" readonly placeholder="Auto-filled">
+        </div>
+        <div class="form-group">
+          <label>ភេទ <span>Gender</span></label>
+          <input type="text" id="gender" class="auto-field" readonly>
+        </div>
+        <div class="form-group">
+          <label>ថ្ងៃចូលបម្រើការងារ <span>Hired Date</span></label>
+          <input type="text" id="hiredDate" class="auto-field" readonly>
+        </div>
+        <div class="form-group">
+          <label>អ្នកវាយតម្លៃ <span>Appraiser</span></label>
+          <input type="text" id="appraiser" placeholder="">
+        </div>
+        <div class="form-group">
+          <label>កាលបរិច្ឆេទត្រួតពិនិត្យ <span>Date of Review</span></label>
+          <input type="date" id="reviewDate">
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card" style="animation:fadeUp 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.2s both">
+      <div class="card-title"><span class="icon">&#128202;</span> តារាងវាយតម្លៃ / Rating Scale</div>
+      <div class="rating-grid">
+        <div class="rating-pill" style="background:rgba(245,158,11,0.04);border-left:3px solid #f59e0b"><span class="range" style="color:#f59e0b">95-100%</span><span class="desc">ល្អណាស់ <span class="en">Outstanding</span></span></div>
+        <div class="rating-pill" style="background:rgba(16,185,129,0.04);border-left:3px solid #10b981"><span class="range" style="color:#10b981">90-94%</span><span class="desc">ល្អ <span class="en">Good</span></span></div>
+        <div class="rating-pill" style="background:rgba(14,165,233,0.04);border-left:3px solid #0ea5e9"><span class="range" style="color:#0ea5e9">70-89%</span><span class="desc">តាមការរំពឹងទុក <span class="en">Meets Expectations</span></span></div>
+        <div class="rating-pill" style="background:rgba(249,115,22,0.04);border-left:3px solid #f97316"><span class="range" style="color:#f97316">60-69%</span><span class="desc">ក្រោមការរំពឹងទុក <span class="en">Below Expectations</span></span></div>
+        <div class="rating-pill" style="background:rgba(239,68,68,0.04);border-left:3px solid #ef4444"><span class="range" style="color:#ef4444">&lt;59%</span><span class="desc">មិនទាន់ធ្វើបាន <span class="en">Does Not Meet</span></span></div>
+        <div class="rating-pill" style="background:rgba(100,116,139,0.04);border-left:3px solid #64748b"><span class="range" style="color:#64748b">0%</span><span class="desc">មិនអាចអនុវត្តបាន <span class="en">Not Applicable</span></span></div>
+      </div>
+    </div>
+
+    <div class="glass-card" style="animation:fadeUp 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s both">
+      <div class="card-title">
+        <span class="icon">&#128221;</span> ការវាយតំលៃលើជំនាញវិជ្ជាជីវៈ និងការគ្រប់គ្រង
+        <span class="accent"></span>
+      </div>
+      <p style="font-size:14px;color:#0ea5e9;margin-bottom:18px;font-weight:800;">Evaluation of Professional Skills and Management (100%)</p>
+      <div class="score-grid">
+        <div class="score-header">
+          <span>N</span>
+          <span>លក្ខណៈ / Characteristics</span>
+          <span>Max</span>
+          <span>Self <span id="sheetStatus" style="display:block;font-size:9px;font-weight:400;color:rgba(15,23,42,0.3);">loading...</span><button id="refreshSheetBtn" onclick="refreshSheetData()" style="display:inline;background:none;border:none;cursor:pointer;font-size:11px;color:#0ea5e9;padding:0;margin-top:2px">&#128260; Refresh</button></span>
+          <span>Supervisor</span>
+        </div>
+        <div id="criteriaList"></div>
+        <div class="total-row">
+          <span class="label">សរុប / Total</span>
+          <span class="val" style="color:rgba(15,23,42,0.2)">100</span>
+          <span class="val" id="totalSelf">0.00</span>
+          <span class="val" id="totalSuper">0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions" style="animation:fadeUp 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.4s both">
+      <button class="btn btn-secondary" onclick="resetForm()">កំណត់ឡើងវិញ / Reset</button>
+      <button class="btn btn-primary" id="submitBtn" onclick="submitEvaluation()">&#10003; ដាក់ស្នើ / Submit</button>
+    </div>
+  </div>
+
+  <div id="tab-dashboard" class="tab-content">
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card">
+        <div class="stat-icon">&#128101;</div>
+        <div class="stat-label">បុគ្គលិកសរុប / Total Staff</div>
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-sub">evaluated this period</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#128200;</div>
+        <div class="stat-label">ពិន្ទុមធ្យម / Avg Score</div>
+        <div class="stat-value" id="statAvg">0.0</div>
+        <div class="stat-sub">out of 100</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#11088;</div>
+        <div class="stat-label">លទ្ធផលខ្ពស់បំផុត / Top Result</div>
+        <div class="stat-value" id="statTop">0.0</div>
+        <div class="stat-sub">highest overall score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#128065;</div>
+        <div class="stat-label">ត្រូវការកែលម្អ / Needs Improve</div>
+        <div class="stat-value" id="statLow">0</div>
+        <div class="stat-sub">below 70% threshold</div>
+      </div>
+    </div>
+
+    <div class="glass-card" style="animation:fadeDown 0.8s ease 0.4s both">
+      <div class="dashboard-header">
+        <h2>&#128196; របាយការណ៍វាយតម្លៃ / Evaluation Reports</h2>
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="Search by name..." oninput="renderTable()">
+          <button class="btn btn-ghost" onclick="startFsListener();showToast('Refreshing from server...','success')">&#8635;</button>
+          <button class="btn btn-export btn-sm" onclick="exportToJSON()">&#128203; JSON</button>
+          <button class="btn btn-export btn-sm" onclick="exportToExcel()">&#128202; Excel</button>
+          <button class="btn btn-import btn-sm" id="sendBulkTgBtn" onclick="sendBulkToTelegram()" style="background:#0088cc;color:#fff">&#128260; Bulk TG</button>
+          <button class="btn btn-import btn-sm" id="importBtn" onclick="importFromFile()">&#128194; Import</button>
+          <button class="btn btn-danger btn-sm" id="clearBtn" onclick="clearAllData()">&#128465; Clear</button>
+        </div>
+      </div>
+      <div class="results-table-wrap">
+        <table class="results-table" id="resultsTable">
+          <thead>
+            <tr>
+              <th>ឈ្មោះ / Name</th>
+              <th>ID</th>
+              <th>សាខា / Campus</th>
+              <th>តួនាទី / Position</th>
+              <th>Self</th>
+              <th>Supervisor</th>
+              <th>Overall</th>
+              <th>ការវាយតម្លៃ / Rating</th>
+              <th class="created-by-col" style="display:none">Created By</th>
+              <th>សកម្មភាព / Action</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div id="noData" class="no-data" style="display:none">
+        <div class="no-data-icon">&#128203;</div>
+        <p>មិនទាន់មានទិន្នន័យ / No evaluation data yet</p>
+        <p style="font-size:12px;color:rgba(15,23,42,0.1);margin-top:4px;">Submit your first evaluation using the form tab above</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-manageusers" class="tab-content">
+    <div class="stats-row" id="userStatsRow">
+      <div class="stat-card">
+        <div class="stat-icon">&#128101;</div>
+        <div class="stat-label">អ្នកប្រើប្រាស់សរុប / Total Users</div>
+        <div class="stat-value" id="statTotalUsers">0</div>
+        <div class="stat-sub">registered administrators</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#128736;</div>
+        <div class="stat-label">អ្នកគ្រប់គ្រង / Admins</div>
+        <div class="stat-value" id="statAdmins">0</div>
+        <div class="stat-sub">standard access</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#11088;</div>
+        <div class="stat-label">អ្នកគ្រប់គ្រងកំពូល / Super Admins</div>
+        <div class="stat-value" id="statSuperAdmins">0</div>
+        <div class="stat-sub">full system access</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#128274;</div>
+        <div class="stat-label">គណនីសកម្ម / Active Accounts</div>
+        <div class="stat-value" id="statActiveUsers">0</div>
+        <div class="stat-sub">available for login</div>
+      </div>
+    </div>
+
+    <div class="glass-card" style="animation:fadeDown 0.8s ease 0.4s both">
+      <div class="dashboard-header">
+        <h2>&#128295; គ្រប់គ្រងអ្នកប្រើប្រាស់ / Manage Administrators</h2>
+        <div class="search-bar">
+          <input type="text" id="userSearchInput" placeholder="Search by name or ID..." oninput="renderManageUsers()">
+          <button class="btn btn-ghost" onclick="renderManageUsers()">&#8635;</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddUserModal()">+ Add User</button>
+        </div>
+      </div>
+      <div class="results-table-wrap">
+        <table class="results-table" id="userMgmtTable">
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>ឈ្មោះ / Name</th>
+              <th>តួនាទី / Role</th>
+              <th style="text-align:right">សកម្មភាព / Actions</th>
+            </tr>
+          </thead>
+          <tbody id="manageUsersBody"></tbody>
+        </table>
+      </div>
+      <div class="no-data" id="noManageUsers" style="display:none">
+        <div class="no-data-icon">&#128203;</div>
+        <p>មិនទាន់មានអ្នកប្រើប្រាស់ / No users found</p>
+        <p style="font-size:12px;color:rgba(15,23,42,0.1);margin-top:4px;">Add your first administrator using the button above</p>
+      </div>
+    </div>
+  </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ========= DETAIL MODAL ========= -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-glass" id="modalContent">
+    <div class="modal-actions">
+      <button class="modal-close-btn" onclick="generatePDF()" title="Download PDF" style="color:#0ea5e9">&#128196;</button>
+      <button class="modal-close-btn" onclick="exportSingleJSON()" title="Export JSON">&#128203;</button>
+      <button class="modal-close-btn" onclick="exportSingleExcel()" title="Export Excel">&#128202;</button>
+      <button class="modal-close-btn" id="sendTgBtn" onclick="sendEvalToTelegram()" title="Send to Telegram" style="color:#0088cc">&#128260;</button>
+      <button class="modal-close-btn" onclick="deleteCurrentEval()" title="Delete" style="color:#dc2626">&#128465;</button>
+      <button class="modal-close-btn" onclick="closeModal()" title="Close">&times;</button>
+    </div>
+    <h2>&#128269; ព័ត៌មានលម្អិត / Evaluation Details</h2>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ========= USER MODAL ========= -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal-glass" style="max-width:480px">
+    <div class="modal-actions">
+      <button class="modal-close-btn" onclick="closeUserModal()" title="Close">&times;</button>
+    </div>
+    <h2 id="userModalTitle">&#128295; Add New User</h2>
+    <div style="display:grid;grid-template-columns:1fr;gap:16px">
+      <div class="form-group">
+        <label>User ID <span style="font-weight:500;color:rgba(15,23,42,0.2);text-transform:none">Employee ID number</span></label>
+        <input type="text" id="mUserId" placeholder="e.g. 12345">
+      </div>
+      <div class="form-group">
+        <label>Full Name <span style="font-weight:500;color:rgba(15,23,42,0.2);text-transform:none">Uppercase preferred</span></label>
+        <input type="text" id="mUserName" placeholder="e.g. JOHN DOE">
+      </div>
+      <div class="form-group">
+        <label>Password <span style="font-weight:500;color:rgba(15,23,42,0.2);text-transform:none">Login password</span></label>
+        <input type="text" id="mPassword" placeholder="Default: user123">
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <select id="mRole">
+          <option value="admin">Admin</option>
+          <option value="superadmin">Super Admin</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-secondary" onclick="closeUserModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveUserBtn" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ========== FIRESTORE INIT ==========
+var firebaseConfig = {
+  apiKey: "AIzaSyA33nN_PXTZBYtIT33Dm64SpiV0RJlEVag",
+  authDomain: "performance-200aa.firebaseapp.com",
+  projectId: "performance-200aa",
+  storageBucket: "performance-200aa.firebasestorage.app",
+  messagingSenderId: "871754927517",
+  appId: "1:871754927517:web:416f6aaa318e53214bb374",
+  measurementId: "G-20VKQJPR1F"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+firebase.firestore().enablePersistence().catch(function(){});
+var _fsReady = false;
+var _fsUnsubscribe = null;
+
+// ========== FIRESTORE SYNC ==========
+function saveToStorage() {
+  try { localStorage.setItem('evalData', JSON.stringify(evaluations)); } catch(e) {}
+}
+
+function loadFromStorage() {
+  try { var saved = localStorage.getItem('evalData'); if (saved) { evaluations = JSON.parse(saved); } } catch(e) {}
+}
+
+function getEvalQuery() {
+  if (!currentUser) return null;
+  if (currentUser.role === 'superadmin') {
+    return db.collection('evaluations');
+  }
+  return db.collection('evaluations')
+    .where('createdById', '==', currentUser.id);
+}
+
+function startFsListener() {
+  if (_fsUnsubscribe) _fsUnsubscribe();
+  if (!currentUser) return;
+  var query = getEvalQuery();
+  if (!query) return;
+  // Clear evaluations immediately so stale data isn't shown
+  evaluations = [];
+  renderTable();
+  updateStats();
+  _fsUnsubscribe = query.onSnapshot(function(snapshot) {
+    var results = [];
+    snapshot.forEach(function(doc) {
+      var data = doc.data();
+      data._id = doc.id;
+      results.push(data);
+    });
+    results.sort(function(a, b) {
+      return (a.timestamp || '').localeCompare(b.timestamp || '');
+    });
+    evaluations = results;
+    _fsReady = true;
+    saveToStorage();
+    renderTable();
+    updateStats();
+    var toast = document.getElementById('toast');
+    if (evaluations.length) {
+      toast.textContent = evaluations.length + ' records synced';
+      toast.className = 'toast toast-success show';
+      setTimeout(function(){toast.classList.remove('show');},2000);
+    }
+  }, function(err) {
+    console.warn('Firestore query error, clearing data:', err);
+    evaluations = [];
+    saveToStorage();
+    renderTable();
+    updateStats();
+  });
+}
+
+function stopFsListener() {
+  if (_fsUnsubscribe) { _fsUnsubscribe(); _fsUnsubscribe = null; }
+}
+
+function getEvalById(id) {
+  for (var i = 0; i < evaluations.length; i++) {
+    if (evaluations[i]._id === id) return evaluations[i];
+  }
+  return null;
+}
+
+function getEvalIndex(id) {
+  for (var i = 0; i < evaluations.length; i++) {
+    if (evaluations[i]._id === id) return i;
+  }
+  return -1;
+}
+
+// ========== SERVER CONFIG ==========
+function toggleServerConfig() {
+  var el = document.getElementById('serverConfigInput');
+  el.classList.toggle('show');
+}
+
+// ========== USERS ==========
+var USERS = [
+  { id: '201760', name: 'LAV SREY NET', password: 'admin123', role: 'admin' },
+  { id: '13177', name: 'IN SOPHOAN', password: 'admin123', role: 'admin' },
+  { id: '201578', name: 'KING ROTH MONY', password: 'admin123', role: 'admin' },
+  { id: '1005', name: 'KAO VANNAK', password: 'admin123', role: 'admin' },
+  { id: '1006', name: 'HOU PHALKUN', password: 'admin123', role: 'admin' },
+  { id: '1019', name: 'VUN SOPHATH', password: 'admin123', role: 'admin' },
+  { id: '2002', name: 'TINA MARIE ESTIOKO', password: 'admin123', role: 'admin' },
+  { id: '201580', name: 'CHAN THEA', password: 'admin123', role: 'admin' },
+  { id: '240256', name: 'CHAN SAMBATH', password: 'admin123', role: 'admin' },
+  { id: '201674', name: 'LY BUNTHOEUN', password: 'admin123', role: 'admin' }
+];
+var SUPER_ADMIN = { id: 'superadmin', name: 'Super Administrator', password: 'super@2024', role: 'superadmin' };
+var currentUser = null;
+var editingUserId = null;
+
+// ========== LOGIN ==========
+function togglePassword() {
+  var pwd = document.getElementById('password');
+  var toggle = document.getElementById('passwordToggle');
+  if (pwd.type === 'password') {
+    pwd.type = 'text';
+    toggle.classList.add('visible');
+  } else {
+    pwd.type = 'password';
+    toggle.classList.remove('visible');
+  }
+}
+
+// Clear error state on input
+function clearInputError(el) {
+  var parent = el.closest('.input-group');
+  if (parent) {
+    el.classList.remove('has-error');
+    var errMsg = parent.querySelector('.error-message');
+    if (errMsg) errMsg.classList.remove('show');
+  }
+}
+
+// Theme toggle with localStorage persistence
+function toggleLoginTheme() {
+  var overlay = document.getElementById('loginOverlay');
+  var toggle = document.getElementById('loginThemeToggle');
+  var aurora = document.getElementById('auroraBg');
+  overlay.classList.toggle('login-dark');
+  toggle.classList.toggle('dark');
+  if (aurora) {
+    aurora.classList.toggle('dark-theme');
+    aurora.classList.toggle('light-theme');
+  }
+  var isDark = overlay.classList.contains('login-dark');
+  try { localStorage.setItem('loginTheme', isDark ? 'dark' : 'light'); } catch(e) {}
+}
+
+function initLoginTheme() {
+  var saved = null;
+  try { saved = localStorage.getItem('loginTheme'); } catch(e) {}
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  if (saved === 'dark' || (!saved && prefersDark)) {
+    var overlay = document.getElementById('loginOverlay');
+    var toggle = document.getElementById('loginThemeToggle');
+    var aurora = document.getElementById('auroraBg');
+    overlay.classList.add('login-dark');
+    toggle.classList.add('dark');
+    if (aurora) {
+      aurora.classList.add('dark-theme');
+      aurora.classList.remove('light-theme');
+    }
+  }
+}
+
+// Ripple effect
+function addRipple(e, btn) {
+  var rect = btn.getBoundingClientRect();
+  var size = Math.max(rect.width, rect.height);
+  var x = e.clientX - rect.left - size / 2;
+  var y = e.clientY - rect.top - size / 2;
+  var ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  ripple.style.cssText = 'width:'+size+'px;height:'+size+'px;left:'+x+'px;top:'+y+'px';
+  btn.appendChild(ripple);
+  setTimeout(function() { ripple.remove(); }, 600);
+}
+
+function clearFieldErrors() {
+  var inputs = document.querySelectorAll('.input-group input');
+  for (var i = 0; i < inputs.length; i++) {
+    clearInputError(inputs[i]);
+  }
+}
+
+function doLogin() {
+  var userId = document.getElementById('userId').value.trim();
+  var password = document.getElementById('password').value;
+  var errorEl = document.getElementById('loginError');
+  var btn = document.getElementById('loginBtn');
+  var userIdInput = document.getElementById('userId');
+  var passwordInput = document.getElementById('password');
+
+  clearFieldErrors();
+  errorEl.classList.remove('show');
+
+  var hasError = false;
+
+  if (!userId) {
+    userIdInput.classList.add('has-error');
+    var parent = userIdInput.closest('.input-group');
+    if (parent) {
+      var errMsg = parent.querySelector('.error-message');
+      if (errMsg) { errMsg.textContent = 'User ID is required'; errMsg.classList.add('show'); }
+    }
+    hasError = true;
+  }
+
+  if (!password) {
+    passwordInput.classList.add('has-error');
+    var parent = passwordInput.closest('.input-group');
+    if (parent) {
+      var errMsg = parent.querySelector('.error-message');
+      if (errMsg) { errMsg.textContent = 'Password is required'; errMsg.classList.add('show'); }
+    }
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  btn.classList.add('loading');
+
+  // Clear any stale cached data from previous sessions
+  evaluations = [];
+  try { localStorage.removeItem('evalData'); } catch(e) {}
+  renderTable();
+  updateStats();
+
+  setTimeout(function() {
+    btn.classList.remove('loading');
+    if (userId.toLowerCase() === SUPER_ADMIN.id && password === SUPER_ADMIN.password) {
+      currentUser = SUPER_ADMIN;
+      enterApp();
+      return;
+    }
+    for (var i = 0; i < USERS.length; i++) {
+      if (USERS[i].id === userId && USERS[i].password === password) {
+        currentUser = USERS[i];
+        enterApp();
+        return;
+      }
+    }
+    errorEl.textContent = 'Invalid User ID or Password. Please try again.';
+    errorEl.classList.add('show');
+    userIdInput.classList.add('has-error');
+    passwordInput.classList.add('has-error');
+  }, 500);
+}
+
+function enterApp() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('appWrapper').classList.add('show');
+  document.getElementById('password').value = '';
+
+  firebase.auth().signInAnonymously().catch(function(err) {
+    console.warn('Firebase anonymous auth failed:', err);
+  });
+
+  var nameParts = currentUser.name.split(' ');
+  var initials = (nameParts[0][0] || 'U') + (nameParts[nameParts.length - 1][0] || '');
+  document.getElementById('sidebarAvatar').textContent = initials;
+  document.getElementById('sidebarName').textContent = currentUser.name;
+  document.getElementById('sidebarRole').textContent = currentUser.role === 'superadmin' ? 'Super Administrator' : 'Administrator';
+
+  var manageBtn = document.getElementById('manageUsersSidebarBtn');
+  var importBtn = document.getElementById('importBtn');
+  var clearBtn = document.getElementById('clearBtn');
+  if (currentUser.role === 'superadmin') {
+    manageBtn.style.display = '';
+    if (importBtn) importBtn.style.display = '';
+    if (clearBtn) clearBtn.style.display = '';
+  } else {
+    manageBtn.style.display = 'none';
+    if (importBtn) importBtn.style.display = 'none';
+    if (clearBtn) clearBtn.style.display = 'none';
+  }
+
+  startFsListener();
+}
+
+function doLogout() {
+  currentUser = null;
+  stopFsListener();
+  evaluations = [];
+  try { localStorage.removeItem('evalData'); } catch(e) {}
+  document.getElementById('appWrapper').classList.remove('show');
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('userId').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  closeSidebar();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+// ========== MANAGE USERS ==========
+function renderManageUsers() {
+  var tbody = document.getElementById('manageUsersBody');
+  var noData = document.getElementById('noManageUsers');
+  var allUsers = [SUPER_ADMIN].concat(USERS);
+  var query = (document.getElementById('userSearchInput').value || '').toLowerCase().trim();
+  if (query) {
+    allUsers = allUsers.filter(function(u){
+      return u.id.toLowerCase().indexOf(query) !== -1
+        || u.name.toLowerCase().indexOf(query) !== -1;
+    });
+  }
+  var total = allUsers.length;
+  var admins = allUsers.filter(function(u){return u.role==='admin'}).length;
+  var superAdmins = allUsers.filter(function(u){return u.role==='superadmin'}).length;
+  document.getElementById('statTotalUsers').textContent = total;
+  document.getElementById('statAdmins').textContent = admins;
+  document.getElementById('statSuperAdmins').textContent = superAdmins;
+  document.getElementById('statActiveUsers').textContent = total;
+  if (!allUsers.length) { tbody.innerHTML = ''; noData.style.display = 'block'; return; }
+  noData.style.display = 'none';
+  var html = '';
+  for (var i = 0; i < allUsers.length; i++) {
+    var u = allUsers[i];
+    var roleLabel = u.role === 'superadmin' ? 'Super Admin' : 'Admin';
+    var roleClass = u.role === 'superadmin' ? 'superadmin' : 'admin';
+    html += '<tr>'
+      + '<td><strong>' + escHtml(u.id) + '</strong></td>'
+      + '<td><strong>' + escHtml(u.name) + '</strong></td>'
+      + '<td><span class="role-badge ' + roleClass + '">' + roleLabel + '</span></td>'
+      + '<td style="text-align:right">'
+      + '<button class="btn-icon-sm" onclick="editUser(\'' + u.id + '\')" title="Edit">&#9998;</button> '
+      + '<button class="btn-icon-sm" onclick="deleteUser(\'' + u.id + '\')" title="Delete" style="color:rgba(239,68,68,0.5)">&#128465;</button>'
+      + '</td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function openAddUserModal() {
+  editingUserId = null;
+  document.getElementById('userModalTitle').textContent = '\u{1F4DF} Add New User';
+  document.getElementById('saveUserBtn').textContent = 'Save User';
+  document.getElementById('mUserId').value = '';
+  document.getElementById('mUserName').value = '';
+  document.getElementById('mPassword').value = 'user123';
+  document.getElementById('mRole').value = 'admin';
+  document.getElementById('userModal').classList.add('show');
+}
+
+function editUser(id) {
+  var allUsers = [SUPER_ADMIN].concat(USERS);
+  var user = null;
+  for (var i = 0; i < allUsers.length; i++) { if (allUsers[i].id === id) { user = allUsers[i]; break; } }
+  if (!user) return;
+  editingUserId = id;
+  document.getElementById('userModalTitle').textContent = '\u{1F4DF} Edit User';
+  document.getElementById('saveUserBtn').textContent = 'Update User';
+  document.getElementById('mUserId').value = user.id;
+  document.getElementById('mUserName').value = user.name;
+  document.getElementById('mPassword').value = user.password;
+  document.getElementById('mRole').value = user.role;
+  document.getElementById('userModal').classList.add('show');
+}
+
+function closeUserModal() { document.getElementById('userModal').classList.remove('show'); }
+
+function saveUser() {
+  var uid = document.getElementById('mUserId').value.trim();
+  var name = document.getElementById('mUserName').value.trim().toUpperCase();
+  var password = document.getElementById('mPassword').value.trim();
+  var role = document.getElementById('mRole').value;
+  if (!uid || !name || !password) { showToast('Please fill all fields.', 'error'); return; }
+  if (editingUserId) {
+    if (editingUserId === SUPER_ADMIN.id) {
+      SUPER_ADMIN.name = name; SUPER_ADMIN.password = password; SUPER_ADMIN.role = role;
+      showToast('Super Admin updated successfully.', 'success');
+    } else {
+      for (var i = 0; i < USERS.length; i++) {
+        if (USERS[i].id === editingUserId) {
+          USERS[i].name = name; USERS[i].password = password; USERS[i].role = role;
+          if (editingUserId !== uid) USERS[i].id = uid;
+          break;
+        }
+      }
+      showToast('User updated successfully.', 'success');
+    }
+    closeUserModal();
+    renderManageUsers();
+  } else {
+    USERS.push({ id: uid, name: name, password: password, role: role });
+    showToast('User added successfully.', 'success');
+    closeUserModal();
+    renderManageUsers();
+  }
+}
+
+function deleteUser(id) {
+  if (id === SUPER_ADMIN.id) { showToast('Cannot delete the Super Admin account.', 'error'); return; }
+  if (!confirm('Are you sure you want to delete user ' + id + '?')) return;
+  for (var i = 0; i < USERS.length; i++) { if (USERS[i].id === id) { USERS.splice(i, 1); break; } }
+  showToast('User deleted successfully.', 'success');
+  renderManageUsers();
+}
+
+// ========== EXISTING DATA ==========
+var EMPLOYEES = [
+  {id:'230452',name:'RIN NARITH',nameKh:'រិន ណារិទ្ធ',hired:'18-SEP-2023',gender:'M',campus:'BKK',position:'SCHOOL PRINCIPAL'},
+  {id:'9155',name:'NIL VEASNA',nameKh:'និល វាសនា',hired:'1-MAR-2017',gender:'M',campus:'BTB3',position:'SCHOOL PRINCIPAL'},
+  {id:'15134',name:'LY DEUC KHANG',nameKh:'លី ដឹកខាំង',hired:'16-JUL-2018',gender:'M',campus:'CKD',position:'SCHOOL PRINCIPAL'},
+  {id:'250028',name:'CHHOEUNG SENGHENG',nameKh:'ឆឹង សេងហេង',hired:'24-MAR-2025',gender:'M',campus:'BCH',position:'SCHOOL PRINCIPAL'},
+  {id:'211949',name:'MENG SENGHAK',nameKh:'ម៉េង សេងហាក់',hired:'1-MAR-2021',gender:'M',campus:'DNG',position:'SCHOOL PRINCIPAL'},
+  {id:'212076',name:'KANN LORN',nameKh:'កាន់ ឡន',hired:'1-DEC-2021',gender:'M',campus:'SSK',position:'SCHOOL PRINCIPAL'},
+  {id:'230510',name:'PRAK PHALLA',nameKh:'ប្រាក់ ផល្លា',hired:'2-JAN-2024',gender:'M',campus:'CAR',position:'SCHOOL PRINCIPAL'},
+  {id:'240010',name:'LEK SIN RITHY',nameKh:'ឡឹក ស៊ីនរឹទ្ធី',hired:'5-FEB-2024',gender:'M',campus:'SHV',position:'SCHOOL PRINCIPAL'},
+  {id:'11249',name:'PRAK BORETH',nameKh:'ប្រាក់ បូរេត',hired:'16-OCT-2018',gender:'M',campus:'STD',position:'SCHOOL PRINCIPAL'},
+  {id:'230509',name:'IM CHANLY',nameKh:'អ៊ឹម ចាន់លី',hired:'2-JAN-2024',gender:'M',campus:'TSK',position:'SCHOOL PRINCIPAL'},
+  {id:'230326',name:'SHUN RAMO',nameKh:'ស៊ុន រ៉ាម៉ូ',hired:'3-JUL-2023',gender:'M',campus:'VSB',position:'SCHOOL PRINCIPAL'},
+  {id:'3002',name:'CHAN BUNNY',nameKh:'ចាន់ ប៊ុននី',hired:'1-AUG-2006',gender:'M',campus:'OPERATIONS',position:'BUSINESS DEVELOPMENT/PROCUREMENT MANAGER'}
+];
+
+var CRITERIA = [
+  {id:1,kh:'អាកប្បកិរិយា',khDesc:'(វាយតម្លៃចំណាប់អារម្មណ៍ និងភាពសាទរ របស់បុគ្គលិកដែលបង្ហាញចំពោះការងារ និង កិច្ចខិតខំប្រឹងប្រែងប្រកបដោយនិរន្តរភាព)',en:'Attitude',desc:'Evaluating the enthusiasm and dedication of employees demonstrated towards their work, as well as their continuous effort and perseverance'},
+  {id:2,kh:'ចំណេះដឹងការងារ',khDesc:'(វាយតម្លៃការយល់ដឹងអំពីការងារ និងកម្រិតជំនាញ ដែលកំពុងបំពេញ ការងាររាល់ថ្ងៃ)',en:'Job Knowledge',desc:'Evaluating understanding of work and skill level in daily job performance'},
+  {id:3,kh:'គំនិតផ្តួចផ្តើម',khDesc:'(វាយតម្លៃទៅលើ គំនិតផ្តួចផ្ដើមក្នុងការអភិវឌ្ឍន៍ក្នុងផ្នែក និង វិធីសាស្ត្រផ្សេងៗ ក្នុងការដោះស្រាយបញ្ហាជាដើម)',en:'Initiative',desc:'Evaluating proactive thinking in department development, problem-solving methods, and other innovative approaches'},
+  {id:4,kh:'ការវិនិច្ឆ័យ និងការយល់ដឹង',khDesc:'(វាយតម្លៃការយល់ដឹងពីការដោះស្រាយបញ្ហា ការសម្រេចចិត្ត និងការយល់ដឹងពី របៀបក្នុងការទប់ស្កាត់បញ្ហាដែលកើតឡើងក្នុងផ្នែក)',en:'Judgment and Awareness',desc:'Evaluating problem-solving skills, decision-making abilities, and understanding of preventive measures within the department'},
+  {id:5,kh:'ការអភិវឌ្ឍន៍បុគ្គលិក',khDesc:'(វាយតម្លៃប្រសិទ្ធភាពនៃការកសាងសមត្ថភាពបុគ្គលិកពីការបង្វឹក ការណែនាំ ការចាត់តាំងការងារដែលស្ថិតក្នុងការគ្រប់គ្រងរបស់ខ្លួន)',en:'Employee Development',desc:'Evaluating the effectiveness of capacity building through training, guidance, and task delegation'},
+  {id:6,kh:'ការចូលរួមក្នុងការគ្រប់គ្រង់ផ្នែក',khDesc:'(វាយតម្លៃការអនុលោមតាមទិសដៅការងារ/ការណែនាំ/ នីតិវិធី/ការចូលផ្តួចផ្ដើមគំនិត ក្នុងការអភិវឌ្ឍន៍ក្នុងផ្នែក)',en:'Participation in Department Management',desc:'Evaluating adherence to work directives, guidelines, procedures, and contributions of innovative ideas for department development'},
+  {id:7,kh:'វិន័យបុគ្គលិក',khDesc:'(វាយតម្លៃលើការគោរពវិន័យរបស់បុគ្គលិក គោរពតាមការណែនាំរបស់និងគោការណ៍ នានារបស់សាលា)',en:'Employee Discipline',desc:'Evaluating employees\' adherence to discipline, compliance with guidelines, and respect for school regulations'},
+  {id:8,kh:'ការ​ទំនាក់ទំនង',khDesc:'(វាយតម្លៃលើការទំនាក់ទំនងរបស់បុគ្គលិកជាមួយមិត្តរួមការងារក្នុងផ្នែក និងក្នុង ស្ថាប័នទាំងមូល)',en:'Communication',desc:'Evaluating employees\' interactions with colleagues within the department and across the institution'},
+  {id:9,kh:'ភាពជាអ្នកដឹកនាំ',khDesc:'(វាយតម្លៃ លើភាពនៃភាពជាអ្នកដឹកនាំ ការកសាងក្រុម និងការវិនិច្ឆ័យទាក់ទងនឹងការអនុវត្តការងារដោយមានប្រសិទ្ធភាពខ្ពស់)',en:'Leadership',desc:'Evaluating leadership qualities, team building, and decision-making related to the effective implementation of work'},
+  {id:10,kh:'ការប្រើប្រាស់ប្រព័ន្ធបច្ចេកវិទ្យា',khDesc:'(វាយតម្លៃទៅលើជំនាញក្នុងការប្រើប្រាស់បច្ចេកវិទ្យាសម្រាប់ការងារការិយាល័យ និងកម្មវិធីចំបាច់មួយចំនួនដូចជា Excel, Google Sheet, Email, Ai ឬ កម្មវិធីផ្សេងៗ)',en:'Technology Use',desc:'Proficiency in using office technology and systems required for the role e.g., Microsoft (Word, Excel), Google sheet, email, Ai tools, or other programs'}
+];
+
+var evaluations = [];
+var currentViewIdx = -1;
+var selfScoresLookup = {};
+var _fetchId = 0;
+
+// ========== TAB SWITCHING ==========
+function switchTab(tab, btn) {
+  var items = document.querySelectorAll('.sidebar-item');
+  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+  if (btn) btn.classList.add('active');
+
+  var contents = document.querySelectorAll('.tab-content');
+  for (var i = 0; i < contents.length; i++) contents[i].classList.remove('active');
+
+  if (tab === 'form') {
+    document.getElementById('tab-form').classList.add('active');
+  } else if (tab === 'dashboard') {
+    document.getElementById('tab-dashboard').classList.add('active');
+    renderTable();
+    updateStats();
+  } else if (tab === 'manageusers') {
+    document.getElementById('tab-manageusers').classList.add('active');
+    renderManageUsers();
+  }
+}
+
+function showDashboard() {
+  var items = document.querySelectorAll('.sidebar-item');
+  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
+  if (items[1]) items[1].classList.add('active');
+  var contents = document.querySelectorAll('.tab-content');
+  for (var i = 0; i < contents.length; i++) contents[i].classList.remove('active');
+  document.getElementById('tab-dashboard').classList.add('active');
+  renderTable();
+  updateStats();
+}
+
+// ========== SHEET SCORES ==========
+var _scoresLoaded = false;
+
+var SELF_SCORE_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQzNvf-UHV5u4jirdF9NuZTltzXozEi13j3U0Nme62VDH9a4UpQTbUYUqHG0hyv1uyzmFdYD5dIOPbR/pub?gid=1856674150&single=true&output=csv';
+
+function cbParam() {
+  return '&_cb=' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+}
+
+function splitCSVRows(text) {
+  var rows = [], cur = '', inQ = false;
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i];
+    if (c === '"') { inQ = !inQ; }
+    if (c === '\n' && !inQ) { if (cur.length > 0) rows.push(cur); cur = ''; }
+    else if (c !== '\r' || inQ) { cur += c; }
+  }
+  if (cur.length > 0) rows.push(cur);
+  return rows;
+}
+
+function fetchSelfScores(next) {
+  _scoresLoaded = false;
+  var box = document.getElementById('sheetStatus');
+  var fid = ++_fetchId;
+  var url = SELF_SCORE_URL + cbParam();
+  fetch(url).then(function(r){return r.text();}).then(function(csv){
+    if (fid !== _fetchId) return;
+    var lines = splitCSVRows(csv);
+    for (var i = 1; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      var parts = parseCSVLine(line);
+      if (parts.length >= 4) {
+        var id = parts[2].trim();
+        if (!id) continue;
+        var scores = [];
+        var maxScores = Math.min(10, parts.length - 4);
+        for (var j = 0; j < maxScores; j++) scores.push(parseFloat(parts[4 + j]) || 0);
+        selfScoresLookup[id] = scores;
+      }
+    }
+    _scoresLoaded = true;
+    var count = Object.keys(selfScoresLookup).length;
+    if (box) box.textContent = count + ' loaded from sheet';
+    var btn = document.getElementById('refreshSheetBtn');
+    if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Refresh'; }
+    if (next) next();
+  }).catch(function(){
+    if (box) box.textContent = 'sheet not accessible';
+    var btn = document.getElementById('refreshSheetBtn');
+    if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Refresh'; }
+    if (next) next();
+  });
+}
+
+function refreshSheetData() {
+  var btn = document.getElementById('refreshSheetBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '\u{1F504} Loading...'; }
+  selfScoresLookup = {};
+  fetchEmployeesFromSheet();
+  fetchSelfScores(function() {
+    var idEl = document.getElementById('empId');
+    if (idEl && idEl.value) applySelfScores(idEl.value);
+  });
+  showToast('Refreshing sheet data...', 'success');
+}
+
+function fetchEmployeesFromSheet() {
+  var gid = '1500996284';
+  var base = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTO68GX9WFErMXR7GxUbaAybv0Vu-Cuia482ACsE8LDVOy_g_fAmvuEG7Y6WTSAII_PG521XZoBgBM_/pub?gid=' + gid + '&single=true&output=csv' + cbParam();
+  fetch(base).then(function(r) { return r.text(); }).then(function(csv) {
+    var lines = splitCSVRows(csv);
+    var newEmployees = [];
+    var started = false;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      if (line.indexOf('Staff ID') !== -1) { started = true; continue; }
+      if (!started) continue;
+      var parts = parseCSVLine(line);
+      var id = (parts[2] || '').trim();
+      if (!id || isNaN(parseInt(id))) continue;
+      newEmployees.push({
+        id: id,
+        name: (parts[3] || '').trim(),
+        nameKh: (parts[4] || '').trim(),
+        gender: (parts[5] || '').trim(),
+        hired: (parts[11] || '').trim(),
+        campus: (parts[13] || '').trim(),
+        position: (parts[14] || '').trim()
+      });
+    }
+    if (newEmployees.length > 10) EMPLOYEES = newEmployees;
+    var box = document.getElementById('sheetStatus');
+    if (box) box.textContent = EMPLOYEES.length + ' employees from sheet';
+    var btn = document.getElementById('refreshSheetBtn');
+    if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Refresh'; }
+  }).catch(function() {
+    fetch('employees.json').then(function(r){return r.json();}).then(function(data){
+      if (data.length > 10) { EMPLOYEES = data; }
+      var box = document.getElementById('sheetStatus');
+      if (box) box.textContent = EMPLOYEES.length + ' employees loaded';
+      var btn = document.getElementById('refreshSheetBtn');
+      if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Refresh'; }
+    }).catch(function() {
+      var box = document.getElementById('sheetStatus');
+      if (box) box.textContent = 'sheet offline, using local data';
+      var btn = document.getElementById('refreshSheetBtn');
+      if (btn) { btn.disabled = false; btn.textContent = '\u{1F504} Refresh'; }
+    });
+  });
+}
+
+function parseCSVLine(line) {
+  var result = [], cur = '', inQ = false;
+  for (var i = 0; i < line.length; i++) {
+    var c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+// ========== CRITERIA ==========
+function initCriteria() {
+  var el = document.getElementById('criteriaList');
+  var html = '';
+  for (var i = 0; i < CRITERIA.length; i++) {
+    var c = CRITERIA[i];
+    html += '<div class="score-row">'
+      + '<span class="num">'+c.id+'</span>'
+      + '<div class="criteria-name">'+c.kh+'<span class="kh-desc"><b>'+c.khDesc+'</b></span><span class="en"><b>'+c.en+' — '+c.desc+'</b></span></div>'
+      + '<span class="max-score">10</span>'
+      + '<input type="number" min="0" max="10" step="0.5" class="self-score" data-id="'+c.id+'" oninput="calcTotals()">'
+      + '<input type="number" min="1" max="10" step="0.5" class="super-score" data-id="'+c.id+'" oninput="calcTotals()">'
+      + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function calcTotals() {
+  var selfTotal = 0, superTotal = 0;
+  var s = document.querySelectorAll('.self-score');
+  var p = document.querySelectorAll('.super-score');
+  for (var i = 0; i < s.length; i++) {
+    selfTotal += parseFloat(s[i].value) || 0;
+    var sv = parseFloat(p[i].value);
+    if (sv < 1) { p[i].value = 1; sv = 1; }
+    if (sv > 10) { p[i].value = 10; sv = 10; }
+    superTotal += sv || 0;
+  }
+  document.getElementById('totalSelf').textContent = selfTotal.toFixed(2);
+  document.getElementById('totalSuper').textContent = superTotal.toFixed(2);
+}
+
+// ========== STORAGE (handled by Firestore sync above) ==========
+
+// ========== AUTOCOMPLETE ==========
+function filterEmployees(val) {
+  var dd = document.getElementById('autoDropdown');
+  if (!val.trim()) { dd.classList.remove('show'); return; }
+  var exactId = val.trim();
+  for (var i = 0; i < EMPLOYEES.length; i++) {
+    if (EMPLOYEES[i].id === exactId) {
+      selectEmployee(EMPLOYEES[i]);
+      dd.classList.remove('show');
+      return;
+    }
+  }
+  var matches = [];
+  for (var i = 0; i < EMPLOYEES.length; i++) {
+    var e = EMPLOYEES[i];
+    if (e.id.indexOf(val) === 0 || e.name.toLowerCase().indexOf(val.toLowerCase()) !== -1) {
+      matches.push(e);
+    }
+  }
+  if (!matches.length) { dd.classList.remove('show'); return; }
+  dd.innerHTML = '';
+  for (var j = 0; j < matches.length; j++) {
+    var item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.innerHTML = '<span><span class="id">'+matches[j].id+'</span> <span class="name">'+matches[j].name+'</span></span><span class="meta">'+matches[j].campus+' · '+matches[j].position+'</span>';
+    item.onclick = (function(emp) { return function() { selectEmployee(emp); }; })(matches[j]);
+    dd.appendChild(item);
+  }
+  dd.classList.add('show');
+}
+
+function selectEmployee(emp) {
+  document.getElementById('empId').value = emp.id;
+  document.getElementById('empName').value = emp.name;
+  document.getElementById('position').value = emp.position;
+  document.getElementById('campus').value = emp.campus;
+  document.getElementById('gender').value = emp.gender === 'M' ? 'Male' : 'Female';
+  document.getElementById('hiredDate').value = emp.hired;
+  document.getElementById('autoDropdown').classList.remove('show');
+  var selfInputs = document.querySelectorAll('.self-score');
+  for (var i = 0; i < selfInputs.length; i++) {
+    selfInputs[i].value = '';
+    selfInputs[i].readOnly = false;
+    selfInputs[i].style.background = '';
+    selfInputs[i].style.borderColor = '';
+  }
+  var statusEl = document.getElementById('sheetStatus');
+  if (statusEl) statusEl.textContent = 'loading...';
+  calcTotals();
+  delete selfScoresLookup[emp.id];
+  fetchSelfScores(function() {
+    applySelfScores(emp.id);
+  });
+}
+
+function applySelfScores(empId) {
+  var scores = selfScoresLookup[empId];
+  var selfInputs = document.querySelectorAll('.self-score');
+  var statusEl = document.getElementById('sheetStatus');
+  var found = scores && scores.some(function(v){return v > 0;});
+  for (var i = 0; i < selfInputs.length; i++) {
+    if (found && i < scores.length) {
+      selfInputs[i].value = scores[i];
+      selfInputs[i].readOnly = true;
+      selfInputs[i].style.background = 'rgba(16,185,129,0.04)';
+      selfInputs[i].style.borderColor = 'rgba(16,185,129,0.15)';
+    } else {
+      selfInputs[i].value = '';
+      selfInputs[i].readOnly = false;
+      selfInputs[i].style.background = '';
+      selfInputs[i].style.borderColor = '';
+    }
+  }
+  if (statusEl) {
+    if (found) statusEl.textContent = 'loaded';
+    else if (selfScoresLookup[empId]) statusEl.textContent = 'all 0';
+    else statusEl.textContent = 'no record in sheet';
+  }
+  calcTotals();
+}
+
+function autoSelectEmployee(val) {
+  if (!val.trim()) return;
+  for (var i = 0; i < EMPLOYEES.length; i++) {
+    if (EMPLOYEES[i].id === val.trim()) {
+      selectEmployee(EMPLOYEES[i]);
+      return;
+    }
+  }
+  var matches = [];
+  for (var i = 0; i < EMPLOYEES.length; i++) {
+    if (EMPLOYEES[i].id.indexOf(val.trim()) === 0) matches.push(EMPLOYEES[i]);
+  }
+  if (matches.length === 1) selectEmployee(matches[0]);
+}
+
+function hideAutocomplete() {
+  setTimeout(function() {
+    document.getElementById('autoDropdown').classList.remove('show');
+    var val = document.getElementById('empId').value;
+    if (val.trim()) autoSelectEmployee(val);
+  }, 200);
+}
+
+// ========== FORM ==========
+function resetForm() {
+  document.getElementById('empId').value = '';
+  document.getElementById('empName').value = '';
+  document.getElementById('position').value = '';
+  document.getElementById('campus').value = '';
+  document.getElementById('gender').value = '';
+  document.getElementById('hiredDate').value = '';
+  document.getElementById('appraiser').value = '';
+  document.getElementById('reviewDate').value = '';
+  var nums = document.querySelectorAll('input[type="number"]');
+  for (var i = 0; i < nums.length; i++) { nums[i].value = ''; nums[i].readOnly = false; nums[i].style.background = ''; nums[i].style.borderColor = ''; }
+  calcTotals();
+  document.getElementById('autoDropdown').classList.remove('show');
+  var st = document.getElementById('sheetStatus');
+  if (st) st.textContent = '';
+}
+
+function getFormData() {
+  var data = { criteria:[], superScores:[] };
+  data.employeeName = document.getElementById('empName').value.trim();
+  data.employeeId = document.getElementById('empId').value.trim();
+  data.position = document.getElementById('position').value.trim();
+  data.hiredDate = document.getElementById('hiredDate').value;
+  data.campus = document.getElementById('campus').value.trim();
+  data.gender = document.getElementById('gender').value;
+  data.appraiser = document.getElementById('appraiser').value.trim();
+  data.reviewDate = document.getElementById('reviewDate').value;
+  var s = document.querySelectorAll('.self-score');
+  var p = document.querySelectorAll('.super-score');
+  for (var i = 0; i < s.length; i++) {
+    data.criteria.push({id:parseInt(s[i].dataset.id),self:parseFloat(s[i].value)||0});
+    data.superScores.push({id:parseInt(p[i].dataset.id),super:parseFloat(p[i].value)||0});
+  }
+  data.totalSelf = parseFloat(document.getElementById('totalSelf').textContent);
+  data.totalSuper = parseFloat(document.getElementById('totalSuper').textContent);
+  return data;
+}
+
+function validateForm(data) {
+  var missing = [];
+  if (!data.employeeId) missing.push('Employee ID');
+  if (!data.campus) missing.push('Campus');
+  if (!data.appraiser) missing.push('Appraiser');
+  return missing;
+}
+
+function submitEvaluation() {
+  var data = getFormData();
+  var missing = validateForm(data);
+  if (missing.length) { showToast('សូមបំពេញ / Please fill: '+missing.join(', '),'error'); return; }
+  if (data.totalSelf === 0 && data.totalSuper === 0) { showToast('សូមបញ្ចូលពិន្ទុ / Please enter scores','error'); return; }
+  var overallScore = data.totalSuper || data.totalSelf;
+  var entry = {
+    employeeName: data.employeeName, employeeId: data.employeeId,
+    position: data.position, hiredDate: data.hiredDate,
+    campus: data.campus, gender: data.gender,
+    appraiser: data.appraiser, reviewDate: data.reviewDate,
+    criteria: data.criteria.map(function(c){return{id:c.id,self:c.self};}),
+    superScores: data.superScores.map(function(s){return{id:s.id,super:s.super};}),
+    totalSelf: data.totalSelf, totalSuper: data.totalSuper,
+    overallScore: overallScore,
+    timestamp: new Date().toISOString(),
+    createdById: currentUser.id,
+    createdByName: currentUser.name
+  };
+  var btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-text">Submitting...</span><div class="spinner"></div>';
+  db.collection('evaluations').add(entry).then(function() {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">\u2713 ដាក់ស្នើ / Submit</span>';
+    resetForm();
+    showToast('\u1794\u17D2\u179A\u17C0\u1794\u17B6\u1793\u17CB! / Synced successfully!','success');
+    showDashboard();
+  }).catch(function(err) {
+    console.warn('Firestore write failed, saving locally:', err);
+    evaluations.push(entry);
+    saveToStorage();
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-text">\u2713 ដាក់ស្នើ / Submit</span>';
+    resetForm();
+    showToast('\u178A\u17B6\u1780\u179F\u17D2\u1793\u17C0\u1793 / Saved offline - will sync when online','success');
+    showDashboard();
+  });
+}
+
+// ========== DASHBOARD ==========
+function updateStats() {
+  if (!evaluations.length) {
+    document.getElementById('statTotal').textContent = '0';
+    document.getElementById('statAvg').textContent = '0.0';
+    document.getElementById('statTop').textContent = '0.0';
+    document.getElementById('statLow').textContent = '0';
+    return;
+  }
+  var total = evaluations.length, sum = 0, maxVal = 0, lowCount = 0;
+  for (var i = 0; i < evaluations.length; i++) {
+    var score = parseFloat(evaluations[i].overallScore) || 0;
+    sum += score;
+    if (score > maxVal) maxVal = score;
+    if (score < 70) lowCount++;
+  }
+  animateNumber('statTotal',total);
+  animateNumber('statAvg',sum/total,1);
+  animateNumber('statTop',maxVal,1);
+  animateNumber('statLow',lowCount);
+}
+
+function animateNumber(elId,target,decimals) {
+  decimals = decimals || 0;
+  var el = document.getElementById(elId);
+  var start = 0, duration = 1000, startTime = null;
+  function step(ts) {
+    if (!startTime) startTime = ts;
+    var p = Math.min((ts-startTime)/duration,1);
+    var cur = start + (target-start) * (1-Math.pow(1-p,3));
+    el.textContent = cur.toFixed(decimals);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function renderTable() {
+  var q = document.getElementById('searchInput').value.toLowerCase();
+  var filtered = [];
+  var filteredIdx = [];
+  for (var i = 0; i < evaluations.length; i++) {
+    if ((evaluations[i].employeeName||'').toLowerCase().indexOf(q) !== -1) {
+      filtered.push(evaluations[i]);
+      filteredIdx.push(i);
+    }
+  }
+  var tbody = document.getElementById('tableBody');
+  var noData = document.getElementById('noData');
+  if (!filtered.length) { tbody.innerHTML = ''; if (!evaluations.length) noData.style.display = 'block'; return; }
+  noData.style.display = 'none';
+  var showCreator = currentUser && currentUser.role === 'superadmin';
+  var createdByCells = document.querySelectorAll('.created-by-col');
+  for (var ci = 0; ci < createdByCells.length; ci++) {
+    createdByCells[ci].style.display = showCreator ? '' : 'none';
+  }
+  var html = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var origIdx = filteredIdx[i];
+    var e = filtered[i], ov = parseFloat(e.overallScore)||0;
+    var cls = ov>=95?'outstanding':ov>=90?'good':ov>=70?'meets':ov>=60?'below':'fail';
+    var lbl = ov>=95?'Outstanding':ov>=90?'Good':ov>=70?'Meets Expect.':ov>=60?'Below Expect.':'Not Met';
+    var docId = e._id || '';
+    html += '<tr>'
+      + '<td style="cursor:pointer" onclick="viewDetail(\''+docId+'\')"><strong>'+escHtml(e.employeeName||'')+'</strong></td>'
+      + '<td style="font-family:Inter,sans-serif;cursor:pointer" onclick="viewDetail(\''+docId+'\')">'+escHtml(e.employeeId||'')+'</td>'
+      + '<td style="cursor:pointer" onclick="viewDetail(\''+docId+'\')">'+escHtml(e.campus||'')+'</td>'
+      + '<td style="cursor:pointer" onclick="viewDetail(\''+docId+'\')">'+escHtml(e.position||'')+'</td>'
+      + '<td style="font-family:Inter,sans-serif;font-weight:500;cursor:pointer" onclick="viewDetail(\''+docId+'\')">'+(parseFloat(e.totalSelf)||0).toFixed(1)+'</td>'
+      + '<td style="font-family:Inter,sans-serif;font-weight:500;cursor:pointer" onclick="viewDetail(\''+docId+'\')">'+(parseFloat(e.totalSuper)||0).toFixed(1)+'</td>'
+      + '<td style="font-family:Inter,sans-serif;font-weight:700;color:#1a2a4a;cursor:pointer" onclick="viewDetail(\''+docId+'\')">'+ov.toFixed(1)+'</td>'
+      + '<td style="cursor:pointer" onclick="viewDetail(\''+docId+'\')"><span class="badge badge-'+cls+'">'+lbl+'</span></td>'
+      + (showCreator ? '<td style="font-family:Inter,sans-serif;font-size:13px;color:rgba(15,23,42,0.5)">'+escHtml(e.createdByName||'')+'</td>' : '')
+      + '<td style="text-align:right;white-space:nowrap">'
+      + '<button class="btn-action btn-view" onclick="viewDetail(\''+docId+'\')">&#128065; View</button> '
+      + '<button class="btn-action btn-delete-sm" onclick="event.stopPropagation();deleteEval(\''+docId+'\')">&#128465;</button>'
+      + '</td></tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+// ========== DETAIL MODAL ==========
+function viewDetail(id) {
+  currentViewIdx = getEvalIndex(id);
+  var e = getEvalById(id);
+  if (!e) return;
+  var sh = '';
+  for (var i = 0; i < CRITERIA.length; i++) {
+    var c = CRITERIA[i], s = (e.criteria&&e.criteria[i])||{}, sup = (e.superScores&&e.superScores[i])||{};
+    var sv = s.self||0, pv = sup.super||0, sp = (sv/10)*100;
+    var bc = sp>=80?'#34d399':sp>=60?'#fbbf24':'#f87171';
+    sh += '<tr><td style="font-family:Inter,sans-serif;color:#0f172a;font-weight:800;font-size:18px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,0.06)">'+c.id+'</td>'
+      + '<td style="padding:12px 14px;border-bottom:1px solid rgba(148,163,184,0.06)"><div style="font-size:18px;font-weight:800;color:#0f172a">'+c.kh+'</div><div style="font-size:13px;font-weight:700;color:rgba(15,23,42,0.3);padding-left:16px"><b>'+c.khDesc+'</b></div><div style="font-size:14px;font-weight:700;color:rgba(15,23,42,0.3);display:block;margin-top:2px"><b>'+c.en+' — '+c.desc+'</b></div></td>'
+      + '<td style="text-align:center;font-family:Inter,sans-serif;color:#0f172a;font-weight:800;font-size:20px;padding:12px 14px;border-bottom:1px solid rgba(148,163,184,0.06)">'+sv+'</td>'
+      + '<td style="padding:12px 14px;border-bottom:1px solid rgba(148,163,184,0.06)"><div class="score-bar-wrap"><div class="score-bar-track"><div class="score-bar-fill" style="width:'+sp+'%;background:'+bc+'"></div></div><span style="font-family:Inter,sans-serif;font-size:14px;font-weight:700;color:rgba(15,23,42,0.3);min-width:36px">'+sv+'</span></div></td>'
+      + '<td style="padding:12px 14px;border-bottom:1px solid rgba(148,163,184,0.06)"><div class="score-bar-wrap"><div class="score-bar-track"><div class="score-bar-fill" style="width:'+(pv/10)*100+'%;background:#0ea5e9"></div></div><span style="font-family:Inter,sans-serif;font-size:14px;font-weight:700;color:rgba(15,23,42,0.3);min-width:36px">'+pv+'</span></div></td></tr>';
+  }
+  var ov = parseFloat(e.overallScore)||0, op = Math.min(ov,100);
+  var oc = op>=80?'#059669':op>=60?'#d97706':'#dc2626';
+  var createdByHtml = '';
+  if (currentUser && currentUser.role === 'superadmin' && e.createdByName) {
+    createdByHtml = '<div class="detail-item"><div class="label">បង្កើតដោយ / Created By</div><div class="value">'+escHtml(e.createdByName||'')+' (ID: '+escHtml(e.createdById||'')+')</div></div>';
+  }
+  document.getElementById('modalBody').innerHTML = ''
+    + '<div class="detail-grid">'
+    + '<div class="detail-item"><div class="label">ឈ្មោះ / Name</div><div class="value">'+escHtml(e.employeeName||'')+'</div></div>'
+    + '<div class="detail-item"><div class="label">ID</div><div class="value" style="font-family:Inter">'+escHtml(e.employeeId||'')+'</div></div>'
+    + '<div class="detail-item"><div class="label">សាខា / Campus</div><div class="value">'+escHtml(e.campus||'')+'</div></div>'
+    + '<div class="detail-item"><div class="label">តួនាទី / Position</div><div class="value">'+escHtml(e.position||'')+'</div></div>'
+    + '<div class="detail-item"><div class="label">អ្នកវាយតម្លៃ / Appraiser</div><div class="value">'+escHtml(e.appraiser||'')+'</div></div>'
+    + '<div class="detail-item"><div class="label">កាលបរិច្ឆេទ / Review Date</div><div class="value">'+escHtml(e.reviewDate||'')+'</div></div>'
+    + createdByHtml
+    + '</div>'
+    + '<h3 style="font-size:18px;font-weight:800;color:#0f172a;margin-bottom:16px;">ពិន្ទុវាយតម្លៃ / Scores</h3>'
+    + '<div style="overflow-x:auto"><table class="results-table" style="min-width:600px"><thead><tr>'
+    + '<th style="padding:14px 16px;font-size:14px;font-weight:800;color:rgba(15,23,42,0.35);text-transform:uppercase;letter-spacing:0.5px">N</th><th style="padding:14px 16px;font-size:14px;font-weight:800;color:rgba(15,23,42,0.35);text-transform:uppercase;letter-spacing:0.5px">លក្ខណៈ / Criteria</th><th style="padding:14px 16px;font-size:14px;font-weight:800;color:rgba(15,23,42,0.35);text-align:center;text-transform:uppercase;letter-spacing:0.5px">Score</th><th style="padding:14px 16px;font-size:14px;font-weight:800;color:rgba(15,23,42,0.35);text-transform:uppercase;letter-spacing:0.5px">Self</th><th style="padding:14px 16px;font-size:14px;font-weight:800;color:rgba(15,23,42,0.35);text-transform:uppercase;letter-spacing:0.5px">Supervisor</th>'
+    + '</tr></thead><tbody>'+sh+'</tbody></table></div>'
+    + '<div style="margin-top:20px;padding:20px;background:rgba(14,165,233,0.02);border:1px solid rgba(14,165,233,0.06);border-radius:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">'
+    + '<div><div style="font-size:11px;color:rgba(15,23,42,0.25);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Self Total</div><div style="font-size:20px;font-weight:700;font-family:Inter,sans-serif;color:#0f172a">'+(parseFloat(e.totalSelf)||0).toFixed(2)+'</div></div>'
+    + '<div><div style="font-size:11px;color:rgba(15,23,42,0.25);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Supervisor Total</div><div style="font-size:20px;font-weight:700;font-family:Inter,sans-serif;color:#0f172a">'+(parseFloat(e.totalSuper)||0).toFixed(2)+'</div></div>'
+    + '<div style="text-align:right"><div style="font-size:11px;color:rgba(15,23,42,0.25);text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Overall Score</div><div style="font-size:28px;font-weight:800;font-family:Inter,sans-serif;background:linear-gradient(135deg,'+oc+','+oc+'cc);-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+ov.toFixed(2)+'%</div></div>'
+    + '</div>'
+    + '<div class="score-bar-track" style="margin-top:8px;height:6px;background:rgba(148,163,184,0.06);"><div class="score-bar-fill" style="width:'+op+'%;height:100%;background:linear-gradient(90deg,'+oc+','+oc+'99);border-radius:3px;"></div></div>';
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeModal() { document.getElementById('detailModal').classList.remove('show'); }
+document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+function deleteEval(docId) {
+  var e = getEvalById(docId);
+  if (!e) return;
+  if (currentUser.role !== 'superadmin' && e.createdById !== currentUser.id) {
+    showToast('Access denied: you can only delete your own evaluations','error');
+    closeModal();
+    return;
+  }
+  if (!confirm('តើអ្នកប្រាកដថាចង់លុបការវាយតម្លៃនេះទេ?\nAre you sure you want to delete this evaluation?')) return;
+  db.collection('evaluations').doc(docId).delete().then(function() {
+    closeModal();
+    showToast('បានលុបដោយជោគជ័យ! / Deleted successfully!','success');
+  }).catch(function(err) {
+    console.warn('Firestore delete failed, removing locally:', err);
+    var idx = getEvalIndex(docId);
+    if (idx >= 0) evaluations.splice(idx, 1);
+    saveToStorage();
+    closeModal();
+    renderTable();
+    updateStats();
+    showToast('Deleted locally (sync pending)','success');
+  });
+}
+
+function deleteCurrentEval() {
+  if (currentViewIdx >= 0 && evaluations[currentViewIdx]) {
+    deleteEval(evaluations[currentViewIdx]._id);
+  }
+}
+
+function clearAllData() {
+  if (!evaluations.length) return;
+  if (currentUser.role !== 'superadmin') {
+    showToast('Access denied: only Super Admin can clear all data','error');
+    return;
+  }
+  if (!confirm('តើអ្នកប្រាកដថាចង់លុបទិន្នន័យទាំងអស់?\nAre you sure you want to clear ALL data?')) return;
+  db.collection('evaluations').get().then(function(snapshot) {
+    var batch = db.batch();
+    snapshot.forEach(function(doc) { batch.delete(doc.ref); });
+    return batch.commit();
+  }).then(function() {
+    showToast('All data cleared from server!','success');
+  }).catch(function(err) {
+    console.warn('Firestore clear failed, clearing locally:', err);
+    evaluations = [];
+    saveToStorage();
+    renderTable();
+    updateStats();
+    showToast('Cleared locally (sync pending)','success');
+  });
+}
+
+function getRatingLabel(score) {
+  if (score>=95) return 'Outstanding';
+  if (score>=90) return 'Good';
+  if (score>=70) return 'Meets Expectations';
+  if (score>=60) return 'Below Expectations';
+  if (score>0) return 'Does Not Meet';
+  return 'Not Applicable';
+}
+
+// ========== TELEGRAM ==========
+function formatEvalMessage(e) {
+  var lines = [];
+  lines.push('<b>\u{1F4CB} Annual Performance Evaluation</b>');
+  lines.push('\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}');
+  lines.push('<b>\u{1F464} Name:</b> ' + escHtml(e.employeeName||'-'));
+  lines.push('<b>\u{1F194} ID:</b> ' + escHtml(e.employeeId||'-'));
+  lines.push('<b>\u{1F3EB} Campus:</b> ' + escHtml(e.campus||'-'));
+  lines.push('<b>\u{1F4BC} Position:</b> ' + escHtml(e.position||'-'));
+  lines.push('<b>\u{1F9D1}\u{200D}\u{1F393} Appraiser:</b> ' + escHtml(e.appraiser||'-'));
+  lines.push('<b>\u{1F4C5} Date:</b> ' + escHtml(e.reviewDate||'-'));
+
+  var totalSelf = 0, totalSuper = 0;
+  var scoreLines = [];
+  for (var ci = 0; ci < CRITERIA.length; ci++) {
+    var c = CRITERIA[ci];
+    var s = (e.criteria && e.criteria[ci]) || {};
+    var sup = (e.superScores && e.superScores[ci]) || {};
+    var sv = s.self || 0; var pv = sup.super || 0;
+    totalSelf += parseFloat(sv); totalSuper += parseFloat(pv);
+    scoreLines.push(c.id + '. ' + escHtml(c.en) + ': <b>' + sv + '</b>/10 | <b>' + pv + '</b>/10');
+  }
+
+  lines.push('');
+  lines.push('<b>\u{1F4CA} Scores</b>');
+  lines.push('\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}');
+  for (var si = 0; si < scoreLines.length; si++) lines.push(scoreLines[si]);
+
+  var overall = parseFloat(e.overallScore) || 0;
+  lines.push('');
+  lines.push('\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}');
+  lines.push('<b>\u{1F4C8} Self Total:</b> ' + totalSelf.toFixed(2));
+  lines.push('<b>\u{1F4C8} Supervisor Total:</b> ' + totalSuper.toFixed(2));
+  lines.push('<b>\u{2B50} Overall:</b> ' + overall.toFixed(2) + '%');
+
+  return lines.join('\n');
+}
+
+function sendEvalToTelegram(idx) {
+  var e = idx !== undefined && evaluations[idx] ? evaluations[idx]
+    : (currentViewIdx >= 0 && evaluations[currentViewIdx] ? evaluations[currentViewIdx] : null);
+  if (!e) { showToast('No evaluation to send', 'error'); return; }
+
+  var text = formatEvalMessage(e);
+  copyToClipboard(text);
+  showToast('Message copied! Paste it in your Telegram channel.','success');
+}
+
+function sendBulkToTelegram() {
+  if (!evaluations.length) { showToast('No data to send', 'error'); return; }
+
+  var text = '<b>\u{1F4CA} Annual Performance — Summary Report</b>\n';
+  text += '\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\u{2500}\n';
+  text += '<b>Total Evaluations:</b> ' + evaluations.length;
+  text += '\n<b>Generated:</b> ' + new Date().toLocaleString();
+
+  var avgSelf = 0, avgSuper = 0, avgOverall = 0;
+  for (var i = 0; i < evaluations.length; i++) {
+    var e = evaluations[i];
+    avgSelf += parseFloat(e.totalSelf || 0);
+    avgSuper += parseFloat(e.totalSuper || 0);
+    avgOverall += parseFloat(e.overallScore || 0);
+  }
+  avgSelf = evaluations.length ? (avgSelf / evaluations.length).toFixed(2) : 0;
+  avgSuper = evaluations.length ? (avgSuper / evaluations.length).toFixed(2) : 0;
+  avgOverall = evaluations.length ? (avgOverall / evaluations.length).toFixed(2) : 0;
+
+  text += '\n\n<b>\u{1F4CA} Averages:</b>';
+  text += '\n\u{1F4C8} Self Total: ' + avgSelf;
+  text += '\n\u{1F4C8} Supervisor Total: ' + avgSuper;
+  text += '\n\u{2B50} Overall: ' + avgOverall + '%';
+
+  text += '\n\n<i>Sent from Annual Performance System</i>';
+
+  copyToClipboard(text);
+  showToast('Summary copied! Paste it in your Telegram channel.','success');
+}
+
+function blobToBase64(blob) {
+  return new Promise(function(resolve) {
+    var fr = new FileReader();
+    fr.onloadend = function() { resolve(fr.result.split(',')[1]); };
+    fr.readAsDataURL(blob);
+  });
+}
+
+function sendBlobToTelegram(blob, filename, caption) {
+  showToast('Telegram file upload not available on GitHub Pages. Download the file and upload manually.','error');
+  return Promise.resolve();
+}
+
+function askSendToTelegram(blob, filename, label) {
+  if (!confirm('Send ' + label + ' to Telegram channel as well?')) return;
+  showToast('Sending to Telegram...', 'success');
+  sendBlobToTelegram(blob, filename, 'Annual Performance Evaluation - ' + label);
+}
+
+// ========== EXPORT ==========
+function normGender(g) {
+  if (g==='M'||g==='Male'||g==='ប្រុស'||g==='ប្រុស / Male') return 'Male';
+  if (g==='F'||g==='Female'||g==='ស្រី'||g==='ស្រី / Female') return 'Female';
+  return g||'';
+}
+
+function exportToJSON() {
+  if (!evaluations.length) { showToast('No data to export','error'); return; }
+  var blob = new Blob([JSON.stringify(evaluations,null,2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'evaluations.json';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Exported '+evaluations.length+' records as JSON','success');
+  setTimeout(function() { askSendToTelegram(blob, 'evaluations.json', 'JSON report ('+evaluations.length+' records)'); }, 300);
+}
+
+function exportSingleJSON() {
+  if (currentViewIdx<0||!evaluations[currentViewIdx]) { showToast('No data to export','error'); return; }
+  var e=evaluations[currentViewIdx];
+  var blob = new Blob([JSON.stringify(e,null,2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = (e.employeeName||'evaluation').replace(/[^a-zA-Z0-9]/g,'_')+'.json';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Exported as JSON','success');
+  setTimeout(function() { askSendToTelegram(blob, (e.employeeName||'evaluation').replace(/[^a-zA-Z0-9]/g,'_')+'.json', 'JSON ('+(e.employeeName||'evaluation')+')'); }, 300);
+}
+
+function excelHeader() {
+  var h=['ID','Employee','Campus','Position','Gender','Hired Date','Appraiser','Review Date'];
+  for (var k=0;k<CRITERIA.length;k++) {
+    var c=CRITERIA[k];
+    h.push(c.en+' (Self)', c.en+' (Super)');
+  }
+  h = h.concat(['Total Self','Total Super','Overall Score']);
+  if (currentUser && currentUser.role === 'superadmin') {
+    h.push('Created By ID', 'Created By Name');
+  }
+  return h;
+}
+
+function excelRow(e) {
+  var r=[e.employeeId||'',e.employeeName||'',e.campus||'',e.position||'',normGender(e.gender),e.hiredDate||'',e.appraiser||'',e.reviewDate||''];
+  for (var j=0;j<CRITERIA.length;j++) {
+    var s=(e.criteria&&e.criteria[j])||{}, sup=(e.superScores&&e.superScores[j])||{};
+    r.push(s.self||0); r.push(sup.super||0);
+  }
+  r = r.concat([parseFloat(e.totalSelf)||0,parseFloat(e.totalSuper)||0,parseFloat(e.overallScore)||0]);
+  if (currentUser && currentUser.role === 'superadmin') {
+    r.push(e.createdById||'', e.createdByName||'');
+  }
+  return r;
+}
+
+function exportToExcel() {
+  if (!evaluations.length) { showToast('No data to export','error'); return; }
+  var rows = [excelHeader()];
+  for (var i=0;i<evaluations.length;i++) rows.push(excelRow(evaluations[i]));
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Evaluations');
+  var wbdata = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  var blob = new Blob([wbdata], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'evaluations.xlsx';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Exported '+evaluations.length+' records as Excel','success');
+  setTimeout(function() { askSendToTelegram(blob, 'evaluations.xlsx', 'Excel report ('+evaluations.length+' records)'); }, 300);
+}
+
+function exportSingleExcel() {
+  if (currentViewIdx<0||!evaluations[currentViewIdx]) { showToast('No data to export','error'); return; }
+  var e=evaluations[currentViewIdx];
+  var ws = XLSX.utils.aoa_to_sheet([excelHeader(),excelRow(e)]);
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Evaluation');
+  var wbdata = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  var blob = new Blob([wbdata], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = (e.employeeName||'evaluation').replace(/[^a-zA-Z0-9]/g,'_')+'.xlsx';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Exported as Excel','success');
+  setTimeout(function() { askSendToTelegram(blob, (e.employeeName||'evaluation').replace(/[^a-zA-Z0-9]/g,'_')+'.xlsx', 'Excel ('+(e.employeeName||'evaluation')+')'); }, 300);
+}
+
+function generatePDF() {
+  if (currentViewIdx<0||!evaluations[currentViewIdx]) { showToast('No data to export','error'); return; }
+  var e=evaluations[currentViewIdx];
+  showToast('Generating PDF...','success');
+
+  var fName = document.getElementById('empName') && document.getElementById('empName').value
+    || e.employeeName || 'evaluation';
+
+  var totalSelf=0, totalSuper=0;
+  for(var ci=0;ci<CRITERIA.length;ci++){
+    var c=CRITERIA[ci];
+    var s=(e.criteria&&e.criteria[ci])||{}, sup=(e.superScores&&e.superScores[ci])||{};
+    totalSelf+=parseFloat(s.self||0); totalSuper+=parseFloat(sup.super||0);
+  }
+  var overall=parseFloat(e.overallScore)||0, op=Math.min(overall,100);
+  var oc=op>=80?'#059669':op>=60?'#d97706':'#dc2626';
+  var ocGrad=op>=80?'linear-gradient(135deg,#059669,#34d399)':op>=60?'linear-gradient(135deg,#d97706,#fbbf24)':'linear-gradient(135deg,#dc2626,#f87171)';
+
+  var rows='';
+  for(var ci=0;ci<CRITERIA.length;ci++){
+    var c=CRITERIA[ci];
+    var s=(e.criteria&&e.criteria[ci])||{}, sup=(e.superScores&&e.superScores[ci])||{};
+    var sv=s.self||0, pv=sup.super||0;
+    var bg=ci%2===0?'#f8fafc':'#ffffff';
+    var miniBar=sv/10*100;
+    var barColor=miniBar>=80?'#34d399':miniBar>=60?'#fbbf24':'#f87171';
+    rows += '<tr style="background:'+bg+'">'
+      + '<td style="padding:5px 8px;font-family:Inter,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-align:center;border-bottom:1px solid #e2e8f0">'+c.id+'</td>'
+      + '<td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><div style="font-family:\'Khmer OS Siemreap\',\'Noto Sans Khmer\',sans-serif;font-size:12px;font-weight:700;color:#0f172a">'+c.kh+'</div><div style="font-size:9px;font-weight:600;color:#94a3b8;margin-top:1px">'+c.en+'</div></td>'
+      + '<td style="padding:5px 8px;font-family:Inter,sans-serif;font-size:11px;font-weight:600;color:#94a3b8;text-align:center;border-bottom:1px solid #e2e8f0">10</td>'
+      + '<td style="padding:5px 8px;border-bottom:1px solid #e2e8f0"><div style="font-family:Inter,sans-serif;font-size:13px;font-weight:800;color:#0f172a;text-align:center">'+sv+'</div><div style="width:100%;height:3px;background:#e2e8f0;border-radius:2px;margin-top:2px;overflow:hidden"><div style="width:'+miniBar+'%;height:100%;background:'+barColor+';border-radius:2px"></div></div></td>'
+      + '<td style="padding:5px 8px;font-family:Inter,sans-serif;font-size:13px;font-weight:800;color:#0ea5e9;text-align:center;border-bottom:1px solid #e2e8f0">'+pv+'</td>'
+      + '</tr>';
+  }
+
+  var todayStr = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@300;400;500;600;700&family=Inter:wght@200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">'
+    + '<style>'
+    + '@page { margin: 0; size: A4; }'
+    + '*, *::before, *::after { box-sizing: border-box; }'
+    + 'body { font-family: \'Khmer OS Siemreap\', \'Noto Sans Khmer\', Inter, sans-serif; margin: 0; padding: 0; background: #f1f5f9; }'
+    + '.page { width: 210mm; min-height: 297mm; padding: 0; margin: 0 auto; background: #ffffff; position: relative; }'
+    
+    + '.header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); padding: 22px 28px 18px; position: relative; overflow: hidden; }'
+    + '.header::after { content: \'\'; position: absolute; top: -60px; right: -60px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%); border-radius: 50%; }'
+    + '.header::before { content: \'\'; position: absolute; bottom: -40px; left: -40px; width: 160px; height: 160px; background: radial-gradient(circle, rgba(99,102,241,0.1) 0%, transparent 70%); border-radius: 50%; }'
+    + '.header-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }'
+    + '.header-title { color: #ffffff; }'
+    + '.header-title h1 { font-family: Inter, sans-serif; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; margin: 0; line-height: 1.2; }'
+    + '.header-title .subtitle { font-family: \'Khmer OS Siemreap\', \'Noto Sans Khmer\', Inter, sans-serif; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.5); margin-top: 3px; letter-spacing: 0.3px; }'
+    + '.header-badge { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 6px 14px; text-align: right; backdrop-filter: blur(4px); }'
+    + '.header-badge .scr { font-family: Inter, sans-serif; font-size: 20px; font-weight: 900; color: #ffffff; line-height: 1; }'
+    + '.header-badge .lbl { font-size: 8px; font-weight: 600; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.5px; }'
+    + '.accent-line { height: 3px; background: linear-gradient(90deg, #0ea5e9, #6366f1, #8b5cf6); }'
+
+    + '.body-content { padding: 18px 26px 14px; }'
+    
+    + '.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }'
+    + '.info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; }'
+    + '.info-card .icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }'
+    + '.info-card .icon.blue { background: #dbeafe; }'
+    + '.info-card .icon.green { background: #d1fae5; }'
+    + '.info-card .icon.purple { background: #ede9fe; }'
+    + '.info-card .icon.amber { background: #fef3c7; }'
+    + '.info-card .icon.rose { background: #ffe4e6; }'
+    + '.info-card .icon.cyan { background: #cffafe; }'
+    + '.info-card .info-lbl { font-family: \'Khmer OS Siemreap\', \'Noto Sans Khmer\', Inter, sans-serif; font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: #94a3b8; }'
+    + '.info-card .info-val { font-family: \'Khmer OS Siemreap\', \'Noto Sans Khmer\', Inter, sans-serif; font-size: 13px; font-weight: 700; color: #0f172a; }'
+    + '.info-card .info-val.id { font-family: Inter, sans-serif; }'
+
+    + '.section-title { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }'
+    + '.section-title .st-bar { width: 3px; height: 18px; border-radius: 2px; background: linear-gradient(180deg, #0ea5e9, #6366f1); flex-shrink: 0; }'
+    + '.section-title h2 { font-family: Inter, sans-serif; font-size: 14px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.3px; }'
+    + '.section-title span { font-family: \'Khmer OS Siemreap\', \'Noto Sans Khmer\', Inter, sans-serif; font-size: 10px; font-weight: 600; color: #94a3b8; }'
+
+    + '.scores-table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }'
+    + '.scores-table thead th { background: #1e293b; color: #ffffff; font-family: \'Khmer OS Siemreap\', \'Noto Sans Khmer\', Inter, sans-serif; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 7px 10px; text-align: center; border-bottom: none; }'
+    + '.scores-table thead th:first-child { text-align: center; border-radius: 0; }'
+    + '.scores-table tbody tr:last-child td { border-bottom: none; }'
+
+    + '.totals-row { display: flex; gap: 10px; margin-top: 10px; }'
+    + '.total-card { flex: 1; border-radius: 10px; padding: 10px 12px; border: 1px solid #e2e8f0; }'
+    + '.total-card .lbl { font-family: Inter, sans-serif; font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }'
+    + '.total-card .val { font-family: Inter, sans-serif; font-size: 18px; font-weight: 900; color: #0f172a; line-height: 1.2; }'
+    + '.total-card.highlight { background: linear-gradient(135deg, '+oc+', rgba(15,23,42,0.02)); border-color: '+oc+'; position: relative; overflow: hidden; }'
+    + '.total-card.highlight .lbl { color: rgba(255,255,255,0.7); }'
+    + '.total-card.highlight .val { color: #ffffff; }'
+
+    + '.bar-section { margin-top: 10px; }'
+    + '.bar-label { display: flex; justify-content: space-between; font-family: Inter, sans-serif; font-size: 9px; font-weight: 600; color: #64748b; margin-bottom: 4px; }'
+    + '.bar-track { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }'
+    + '.bar-fill { height: 100%; background: '+ocGrad+'; border-radius: 4px; transition: width 0.3s; }'
+
+    + '.footer-section { margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }'
+    + '.footer-section .f-text { font-family: Inter, sans-serif; font-size: 8px; color: #94a3b8; }'
+    + '.footer-section .f-badge { font-family: Inter, sans-serif; font-size: 7px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; background: #f1f5f9; padding: 3px 10px; border-radius: 4px; }'
+    + '</style></head><body>'
+    + '<div class="page">'
+    
+    + '<div class="header">'
+    + '<div class="header-top">'
+    + '<div class="header-title">'
+    + '<h1>Annual Performance Evaluation</h1>'
+    + '<div class="subtitle">Performance Evaluation Report</div>'
+    + '</div>'
+    + '<div class="header-badge">'
+    + '<div class="scr">'+overall.toFixed(1)+'%</div>'
+    + '<div class="lbl">Overall Score</div>'
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="accent-line"></div>'
+    
+    + '<div class="body-content">'
+    + '<div class="info-grid">'
+    + '<div class="info-card"><div class="icon blue">\u{1F464}</div><div><div class="info-lbl">Name</div><div class="info-val">'+escHtml(e.employeeName||'-')+'</div></div></div>'
+    + '<div class="info-card"><div class="icon green">\u{1F194}</div><div><div class="info-lbl">ID</div><div class="info-val id">'+escHtml(e.employeeId||'-')+'</div></div></div>'
+    + '<div class="info-card"><div class="icon purple">\u{1F3EB}</div><div><div class="info-lbl">Campus</div><div class="info-val">'+escHtml(e.campus||'-')+'</div></div></div>'
+    + '<div class="info-card"><div class="icon amber">\u{1F4BC}</div><div><div class="info-lbl">Position</div><div class="info-val">'+escHtml(e.position||'-')+'</div></div></div>'
+    + '<div class="info-card"><div class="icon rose">\u{1F9D1}\u200D\u{1F393}</div><div><div class="info-lbl">Appraiser</div><div class="info-val">'+escHtml(e.appraiser||'-')+'</div></div></div>'
+    + '<div class="info-card"><div class="icon cyan">\u{1F4C5}</div><div><div class="info-lbl">Review Date</div><div class="info-val">'+escHtml(e.reviewDate||'-')+'</div></div></div>'
+    + '</div>'
+
+    + '<div class="section-title"><div class="st-bar"></div><h2>Evaluation Scores</h2></div>'
+    + '<table class="scores-table"><thead><tr>'
+    + '<th style="width:7%">#</th><th style="width:46%">Criteria</th><th style="width:9%">Max</th><th style="width:19%">Self</th><th style="width:19%">Supervisor</th>'
+    + '</tr></thead><tbody>'+rows+'</tbody></table>'
+
+    + '<div class="totals-row">'
+    + '<div class="total-card"><div class="lbl">\u{1F464} Self Total</div><div class="val">'+totalSelf.toFixed(2)+'</div></div>'
+    + '<div class="total-card"><div class="lbl">\u{1F468}\u200D\u{1F4BB} Supervisor Total</div><div class="val">'+totalSuper.toFixed(2)+'</div></div>'
+    + '<div class="total-card highlight"><div class="lbl">\u{2B50} Overall Score</div><div class="val">'+overall.toFixed(2)+'%</div></div>'
+    + '</div>'
+
+    + '<div class="bar-section">'
+    + '<div class="bar-label"><span>Performance Rating</span><span>'+op.toFixed(0)+'%</span></div>'
+    + '<div class="bar-track"><div class="bar-fill" style="width:'+op+'%"></div></div>'
+    + '</div>'
+
+    + '<div class="footer-section">'
+    + '<div class="f-text">Generated on '+todayStr+'</div>'
+    + '<div class="f-badge">Annual Performance Evaluation System</div>'
+    + '</div>'
+    + '</div>'
+    + '</div></body></html>';
+
+  var iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:794px;height:900px;border:none;background:#f1f5f9';
+  document.body.appendChild(iframe);
+
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
+
+  setTimeout(function(){
+    var bodyEl = iframe.contentDocument.body;
+    var pageEl = bodyEl.querySelector('.page');
+    html2canvas(pageEl || bodyEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff'
+    }).then(function(canvas){
+      var imgData = canvas.toDataURL('image/jpeg', 0.97);
+      var {jsPDF} = window.jspdf;
+      var doc = new jsPDF('p', 'mm', 'a4');
+      var pw = 210, ph = 297;
+      var iw = pw, ih = iw * canvas.height / canvas.width;
+      doc.addImage(imgData, 'JPEG', 0, 0, pw, Math.min(ih, ph));
+      if (ih > ph) {
+        var remaining = ih - ph;
+        var srcY = ph / ih * canvas.height;
+        while (remaining > 0) {
+          doc.addPage();
+          var pageImgH = Math.min(remaining, ph);
+          var cropH = pageImgH / ih * canvas.height;
+          var pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = cropH;
+          var ctx = pageCanvas.getContext('2d');
+          ctx.drawImage(canvas, 0, srcY, canvas.width, cropH, 0, 0, canvas.width, cropH);
+          var pageData = pageCanvas.toDataURL('image/jpeg', 0.97);
+          doc.addImage(pageData, 'JPEG', 0, 0, pw, pageImgH);
+          srcY += cropH;
+          remaining -= pageImgH;
+        }
+      }
+      doc.save(fName.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
+      document.body.removeChild(iframe);
+      showToast('PDF downloaded successfully', 'success');
+    }).catch(function(){
+      document.body.removeChild(iframe);
+      showToast('PDF generation failed', 'error');
+    });
+  }, 1500);
+}
+
+function importFromFile() {
+  var inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.json,.xlsx,.xls';
+  inp.onchange = function(e) {
+    var file = inp.files[0];
+    var ext = file.name.split('.').pop().toLowerCase();
+    var fr = new FileReader();
+    fr.onload = function(ev) {
+      try {
+        var imported;
+        if (ext === 'json') {
+          var data = JSON.parse(ev.target.result);
+          if (!Array.isArray(data)) { showToast('Invalid: expected an array','error'); return; }
+          if (data.length && !data[0].employeeId) { showToast('Invalid evaluation format','error'); return; }
+          imported = data;
+        } else {
+          var wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(ws, {header:1});
+          if (rows.length<2) { showToast('Excel file is empty','error'); return; }
+          imported = [];
+          for (var i=1;i<rows.length;i++) {
+            var row=rows[i];
+            if (!row[0]) continue;
+            var obj = {
+              employeeId:String(row[0]||''), employeeName:String(row[1]||''),
+              campus:String(row[2]||''), position:String(row[3]||''),
+              gender:normGender(String(row[4]||'')), hiredDate:String(row[5]||''),
+              appraiser:String(row[6]||''), reviewDate:String(row[7]||''),
+              criteria:[], superScores:[], totalSelf:0, totalSuper:0, overallScore:0
+            };
+            var col=8;
+            for (var j=0;j<CRITERIA.length;j++) {
+              obj.criteria.push({id:CRITERIA[j].id,self:parseFloat(row[col])||0});
+              obj.superScores.push({id:CRITERIA[j].id,super:parseFloat(row[col+1])||0});
+              col+=2;
+            }
+            obj.totalSelf=parseFloat(row[col])||0;
+            obj.totalSuper=parseFloat(row[col+1])||0;
+            obj.overallScore=parseFloat(row[col+2])||0;
+            imported.push(obj);
+          }
+          if (!imported.length) { showToast('No valid records found','error'); return; }
+        }
+        var promises = [];
+        for (var x=0;x<imported.length;x++) {
+          imported[x].timestamp = new Date().toISOString();
+          imported[x].createdById = currentUser ? currentUser.id : '';
+          imported[x].createdByName = currentUser ? currentUser.name : '';
+          promises.push(db.collection('evaluations').add(imported[x]));
+        }
+        Promise.all(promises).then(function() {
+          showToast('Added '+imported.length+' records. Syncing across devices...','success');
+        }).catch(function() {
+          showToast('Added '+imported.length+' records. Offline sync pending.','success');
+        });
+      } catch(err) { showToast('Invalid '+ext.toUpperCase()+' file','error'); }
+    };
+    if (ext==='json') fr.readAsText(file);
+    else fr.readAsArrayBuffer(file);
+  };
+  inp.click();
+}
+
+// ========== CLIPBOARD ==========
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(function() {
+      fallbackCopy(text);
+    });
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+// ========== TOAST ==========
+function showToast(msg,type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast toast-'+type+' show';
+  setTimeout(function(){t.classList.remove('show');},4000);
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ========== INIT ==========
+initLoginTheme();
+
+// Ripple effect on login button
+document.getElementById('loginBtn').addEventListener('click', function(e) {
+  addRipple(e, this);
+});
+
+// ========== STAR & RAIN ANIMATION ==========
+var starCanvas = document.getElementById('starCanvas');
+var starCtx = starCanvas.getContext('2d');
+var starArr = [];
+var STAR_COUNT = 200;
+
+function resizeStarCanvas() {
+  starCanvas.width = window.innerWidth;
+  starCanvas.height = window.innerHeight;
+}
+resizeStarCanvas();
+window.addEventListener('resize', resizeStarCanvas);
+
+for (var si = 0; si < STAR_COUNT; si++) {
+  starArr.push({
+    x: Math.random() * starCanvas.width,
+    y: Math.random() * starCanvas.height,
+    size: Math.random() * 2.2 + 0.4,
+    speedX: (Math.random() - 0.5) * 0.2,
+    speedY: (Math.random() - 0.5) * 0.2,
+    opacity: Math.random() * 0.6 + 0.2,
+    twinkleSpeed: Math.random() * 0.02 + 0.005,
+    twinklePhase: Math.random() * Math.PI * 2
+  });
+}
+
+function animateStars() {
+  starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+  var time = Date.now() * 0.001;
+
+  // Galaxy nebula effect
+  var galaxyX = starCanvas.width * 0.3 + Math.sin(time * 0.04) * starCanvas.width * 0.1;
+  var galaxyY = starCanvas.height * 0.3 + Math.cos(time * 0.03) * starCanvas.height * 0.08;
+  var galaxyRad = Math.min(starCanvas.width, starCanvas.height) * 0.35;
+  var galGrad = starCtx.createRadialGradient(galaxyX, galaxyY, 0, galaxyX, galaxyY, galaxyRad);
+  galGrad.addColorStop(0, 'rgba(37, 99, 235, 0.04)');
+  galGrad.addColorStop(0.3, 'rgba(30, 58, 138, 0.025)');
+  galGrad.addColorStop(0.7, 'rgba(30, 64, 175, 0.012)');
+  galGrad.addColorStop(1, 'rgba(30, 58, 138, 0)');
+  starCtx.fillStyle = galGrad;
+  starCtx.fillRect(0, 0, starCanvas.width, starCanvas.height);
+
+  // Second nebula
+  var gx2 = starCanvas.width * 0.7 + Math.cos(time * 0.025) * starCanvas.width * 0.12;
+  var gy2 = starCanvas.height * 0.7 + Math.sin(time * 0.035) * starCanvas.height * 0.08;
+  var galGrad2 = starCtx.createRadialGradient(gx2, gy2, 0, gx2, gy2, galaxyRad * 0.7);
+  galGrad2.addColorStop(0, 'rgba(59, 130, 246, 0.035)');
+  galGrad2.addColorStop(0.5, 'rgba(30, 58, 138, 0.018)');
+  galGrad2.addColorStop(1, 'rgba(30, 58, 138, 0)');
+  starCtx.fillStyle = galGrad2;
+  starCtx.fillRect(0, 0, starCanvas.width, starCanvas.height);
+
+  // Draw stars
+  for (var si = 0; si < starArr.length; si++) {
+    var st = starArr[si];
+    st.x += st.speedX;
+    st.y += st.speedY;
+    if (st.x < -5) st.x = starCanvas.width + 5;
+    if (st.x > starCanvas.width + 5) st.x = -5;
+    if (st.y < -5) st.y = starCanvas.height + 5;
+    if (st.y > starCanvas.height + 5) st.y = -5;
+    var twinkle = st.opacity * (0.5 + 0.5 * Math.sin(time * st.twinkleSpeed * 10 + st.twinklePhase));
+    starCtx.beginPath();
+    starCtx.arc(st.x, st.y, st.size, 0, Math.PI * 2);
+
+    // Dark blue stars
+    var blueTint = 0.3 + 0.7 * (st.size / 2.6);
+    starCtx.fillStyle = 'rgba(59, 130, 246, ' + (twinkle * 0.7 * blueTint) + ')';
+    starCtx.fill();
+
+    // Star glow
+    if (st.size > 1.5) {
+      starCtx.beginPath();
+      starCtx.arc(st.x, st.y, st.size * 3, 0, Math.PI * 2);
+      starCtx.fillStyle = 'rgba(37, 99, 235, ' + (twinkle * 0.06) + ')';
+      starCtx.fill();
+    }
+  }
+  requestAnimationFrame(animateStars);
+}
+animateStars();
+
+// ========== INIT ==========
+fetchEmployeesFromSheet();
+initCriteria();
+try { var saved = localStorage.getItem('evalData'); if (saved) { evaluations = JSON.parse(saved); } } catch(e) {}
+fetchSelfScores();
+var _refreshTimer = setInterval(function() {
+  fetchSelfScores(function() {
+    var idEl = document.getElementById('empId');
+    if (idEl && idEl.value) applySelfScores(idEl.value);
+  });
+}, 30000);
+firebase.auth().onAuthStateChanged(function(user) {
+  if (user && currentUser) {
+    startFsListener();
+  }
+});
+</script>
+</body>
+</html>
+>>>>>>> 5ff7a9f2b86f242ce1a4543c65b0fbd4a087e94f
