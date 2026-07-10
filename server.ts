@@ -16,9 +16,9 @@ db.pragma('journal_mode = WAL');
 // Seed default admin if no users exist
 const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as any;
 if (userCount.count === 0) {
-  const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)').run('admin', 'Admin', hash, 'superadmin');
-  console.log('Seeded default admin user (id: admin, password: admin123)');
+  const hash = bcrypt.hashSync('super@2026', 10);
+  db.prepare('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)').run('superadmin', 'Super Administrator', hash, 'superadmin');
+  console.log('Seeded default admin user (id: superadmin, password: super@2026)');
 }
 
 db.exec(`
@@ -672,12 +672,33 @@ app.post('/api/seed', (req, res) => {
       return res.status(400).json({ error: 'Users already exist. Database is already seeded.' });
     }
     const { userId, password, name, role } = req.body;
-    const id = userId || 'admin';
-    const pw = password || 'admin123';
+    const id = userId || 'superadmin';
+    const pw = password || 'super@2026';
     const hash = bcrypt.hashSync(pw, 10);
-    db.prepare('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)').run(id, name || 'Admin', hash, role || 'superadmin');
-    logAudit(id, name || 'Admin', 'seed', 'Initial admin user seeded');
+    db.prepare('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)').run(id, name || 'Super Administrator', hash, role || 'superadmin');
+    logAudit(id, name || 'Super Administrator', 'seed', 'Initial admin user seeded');
     res.json({ message: `User '${id}' created with role '${role || 'superadmin'}'` });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+// ====== RESET ADMIN ENDPOINT ======
+
+app.post('/api/reset-admin', (req, res) => {
+  try {
+    const { userId, password } = req.body;
+    const id = userId || 'superadmin';
+    const pw = password || 'super@2026';
+    const hash = bcrypt.hashSync(pw, 10);
+    const existing = db.prepare('SELECT id FROM users WHERE id = ?').get(id) as any;
+    if (existing) {
+      db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hash, id);
+      logAudit(id, '', 'reset-admin', `Password reset for user '${id}'`);
+      res.json({ message: `Password reset for '${id}'` });
+    } else {
+      db.prepare('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)').run(id, 'Super Administrator', hash, 'superadmin');
+      logAudit(id, 'Super Administrator', 'reset-admin', `User '${id}' created with reset`);
+      res.json({ message: `User '${id}' created with default password` });
+    }
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
