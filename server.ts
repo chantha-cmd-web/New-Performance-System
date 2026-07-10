@@ -7,10 +7,10 @@ import Database from 'better-sqlite3';
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || '3000', 10);
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-2026';
 
-const db = new Database('database.sqlite');
+const db = new Database(process.env.DATABASE_PATH || 'database.sqlite');
 db.pragma('journal_mode = WAL');
 
 db.exec(`

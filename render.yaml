@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: new-performance-system
+    env: node
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_PATH
+        value: /var/data/database.sqlite
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
