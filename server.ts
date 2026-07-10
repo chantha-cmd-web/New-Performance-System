@@ -13,6 +13,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-2026';
 const db = new Database(process.env.DATABASE_PATH || 'database.sqlite');
 db.pragma('journal_mode = WAL');
 
+// Seed default admin if no users exist
+const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as any;
+if (userCount.count === 0) {
+  const hash = bcrypt.hashSync('admin123', 10);
+  db.prepare('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)').run('admin', 'Admin', hash, 'superadmin');
+  console.log('Seeded default admin user (id: admin, password: admin123)');
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
@@ -653,6 +661,24 @@ app.get('/api/pdf/evaluation-summary', authenticateToken, async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ====== SEED ENDPOINT ======
+
+app.post('/api/seed', (req, res) => {
+  try {
+    const existing = db.prepare('SELECT COUNT(*) as count FROM users').get() as any;
+    if (existing.count > 0) {
+      return res.status(400).json({ error: 'Users already exist. Database is already seeded.' });
+    }
+    const { userId, password, name, role } = req.body;
+    const id = userId || 'admin';
+    const pw = password || 'admin123';
+    const hash = bcrypt.hashSync(pw, 10);
+    db.prepare('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)').run(id, name || 'Admin', hash, role || 'superadmin');
+    logAudit(id, name || 'Admin', 'seed', 'Initial admin user seeded');
+    res.json({ message: `User '${id}' created with role '${role || 'superadmin'}'` });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
 // ====== AUTH ENDPOINTS ======
