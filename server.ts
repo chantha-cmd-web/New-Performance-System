@@ -13,14 +13,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-2026';
 const db = new Database(process.env.DATABASE_PATH || 'database.sqlite');
 db.pragma('journal_mode = WAL');
 
-// Seed default admin if no users exist
-const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as any;
-if (userCount.count === 0) {
-  const hash = bcrypt.hashSync('super@2026', 10);
-  db.prepare('INSERT INTO users (id, name, password, role) VALUES (?, ?, ?, ?)').run('superadmin', 'Super Administrator', hash, 'superadmin');
-  console.log('Seeded default admin user (id: superadmin, password: super@2026)');
-}
-
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
